@@ -244,10 +244,17 @@
   .board {
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(4, 1fr);
-    gap: 12px;
-    aspect-ratio: 3 / 4;
+    /* Columns/rows/gap/aspect-ratio are set per level from JS via inline
+       style + CSS custom properties (--cols, --rows, --gap). Defaults
+       below match Level 1 (3x4) so the board is sane before a level
+       starts. */
+    --cols: 3;
+    --rows: 4;
+    --gap: 12px;
+    grid-template-columns: repeat(var(--cols), 1fr);
+    grid-template-rows: repeat(var(--rows), 1fr);
+    gap: var(--gap);
+    aspect-ratio: calc(var(--cols) / var(--rows));
     margin-bottom: 14px;
   }
 
@@ -300,8 +307,14 @@
     background: linear-gradient(145deg, #ff4e8a, #ff2d6f);
   }
 
+  .face {
+    /* --face-font / --back-radius are set per level on .board so denser
+       grids get smaller emoji and tighter corners. */
+    border-radius: var(--face-radius, 18px);
+  }
+
   .face-back .star {
-    font-size: clamp(32px, 11vw, 54px);
+    font-size: var(--star-font, clamp(32px, 11vw, 54px));
     color: #ffffff;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
   }
@@ -309,7 +322,7 @@
   .face-front {
     background: #ffffff;
     transform: rotateY(180deg);
-    font-size: clamp(38px, 13vw, 64px);
+    font-size: var(--face-font, clamp(38px, 13vw, 64px));
   }
 
   .card.matched .face-front {
@@ -323,6 +336,140 @@
     35%  { transform: rotateY(180deg) scale(1.22); }
     60%  { transform: rotateY(180deg) scale(0.92); }
     100% { transform: rotateY(180deg) scale(1); }
+  }
+
+  /* ---- Level select ---- */
+  .level-select-card {
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 26px;
+    padding: 20px 16px;
+    width: 100%;
+    max-width: 380px;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    margin-top: 6px;
+  }
+
+  .level-select-card h2 {
+    text-align: center;
+    font-size: 28px;
+    margin-bottom: 14px;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
+  }
+
+  .level-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .level-btn {
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    text-align: left;
+    color: #5a1fb0;
+    background: rgba(255, 255, 255, 0.92);
+    border: none;
+    border-radius: 16px;
+    padding: 12px 14px;
+    cursor: pointer;
+    touch-action: manipulation;
+    box-shadow: 0 5px 0 rgba(0, 0, 0, 0.15);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  }
+
+  .level-btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.15);
+  }
+
+  .level-btn.locked {
+    opacity: 0.55;
+    cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.55);
+  }
+
+  .level-btn.locked:active {
+    transform: none;
+    box-shadow: 0 5px 0 rgba(0, 0, 0, 0.15);
+  }
+
+  .level-badge {
+    flex: 0 0 auto;
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    background: linear-gradient(145deg, #a86bff, #7b2ff7);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: bold;
+  }
+
+  .level-btn.locked .level-badge {
+    background: #b9a7d6;
+  }
+
+  .level-info {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    overflow: hidden;
+  }
+
+  .level-title {
+    font-size: 19px;
+    font-weight: bold;
+  }
+
+  .level-meta {
+    font-size: 14px;
+    color: #8a63c9;
+    font-weight: bold;
+  }
+
+  .level-state {
+    flex: 0 0 auto;
+    font-size: 24px;
+  }
+
+  /* ---- In-game controls bar ---- */
+  .game-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .mini-btn {
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.25);
+    border: none;
+    border-radius: 999px;
+    padding: 8px 16px;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: transform 0.08s ease;
+  }
+
+  .mini-btn:active { transform: scale(0.94); }
+
+  .mini-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
   }
 
   /* ---- Leaderboard ---- */
@@ -541,6 +688,15 @@
       <button class="big-btn purple" id="toLeaderboardBtn">🏆 Leaderboard</button>
     </div>
 
+    <!-- ===== Level Select Screen ===== -->
+    <div class="screen" id="levelSelectScreen">
+      <div class="level-select-card">
+        <h2>🗺️ Pick a Level</h2>
+        <ol class="level-list" id="levelList"></ol>
+      </div>
+      <button class="big-btn secondary" id="levelBackBtn">Back</button>
+    </div>
+
     <!-- ===== Game Screen ===== -->
     <div class="screen" id="gameScreen">
       <div class="scoreboard">
@@ -548,6 +704,10 @@
         <span>•</span>
         <span>Moves:</span>
         <span class="moves-number" id="moves">0</span>
+      </div>
+      <div class="game-controls">
+        <button class="mini-btn" id="gameBackBtn" type="button">⬅ Levels</button>
+        <!-- Peek/hint button is added in FEAT-003 (coins). -->
       </div>
       <div class="board" id="board" aria-label="Memory game board"></div>
     </div>
@@ -571,7 +731,9 @@
       <h2>You Win!</h2>
       <p>Great job, <b id="winName">Player</b>!<br />You did it in <b id="finalMoves">0</b> moves!</p>
       <div class="btn-row">
-        <button class="big-btn" id="playAgain">Play Again</button>
+        <button class="big-btn" id="winNextBtn">Next Level ➡</button>
+        <button class="big-btn secondary" id="playAgain">Play Again</button>
+        <button class="big-btn purple" id="winLevelsBtn">🗺️ Level Select</button>
         <button class="big-btn purple" id="winLeaderboardBtn">🏆 Leaderboard</button>
       </div>
     </div>
@@ -688,7 +850,35 @@
     "🛸", "🚀", "⚡", "🔥", "🎰", "🏅"
   ];
 
-  var PAIRS = 6;
+  /* ===================== LEVELS =====================
+     Five levels of growing difficulty. Each level drives the deck size
+     (pairs) and the board grid (cols/rows) plus density tuning (gap and
+     emoji font size) so every grid fits the phone-first 480px container
+     with tappable cards.
+       cols * rows === pairs * 2 (every card has a slot).
+       6 -> 12 (3x4), 8 -> 16 (4x4), 10 -> 20 (4x5),
+       12 -> 24 (4x6), 15 -> 30 (5x6).
+     ===================================================================== */
+  var LEVELS = [
+    { level: 1, pairs: 6,  cols: 3, rows: 4, gap: 12, faceFont: 44, starFont: 40 },
+    { level: 2, pairs: 8,  cols: 4, rows: 4, gap: 10, faceFont: 34, starFont: 30 },
+    { level: 3, pairs: 10, cols: 4, rows: 5, gap: 9,  faceFont: 30, starFont: 26 },
+    { level: 4, pairs: 12, cols: 4, rows: 6, gap: 8,  faceFont: 28, starFont: 24 },
+    { level: 5, pairs: 15, cols: 5, rows: 6, gap: 6,  faceFont: 22, starFont: 20 }
+  ];
+
+  // Look up a level config by its level number (returns null if missing).
+  function getLevelConfig(levelNumber) {
+    for (var i = 0; i < LEVELS.length; i++) {
+      if (LEVELS[i].level === levelNumber) return LEVELS[i];
+    }
+    return null;
+  }
+
+  // The active level config while a game is in progress. Set by startLevel().
+  // Defaults to level 1 so buildDeck()/win-check always have a pair count.
+  var currentLevel = LEVELS[0];
+
   var STORAGE_KEY = "jjMemoryMatch.leaderboard";
   var NAME_KEY = "jjMemoryMatch.playerName";
   var SOUND_KEY = "jjMemoryMatch.sound";
@@ -828,12 +1018,17 @@
 
   // ---- Elements ----
   var startScreen = document.getElementById("startScreen");
+  var levelSelectScreen = document.getElementById("levelSelectScreen");
   var gameScreen = document.getElementById("gameScreen");
   var leaderboardScreen = document.getElementById("leaderboardScreen");
 
   var nameInput = document.getElementById("nameInput");
   var startBtn = document.getElementById("startBtn");
   var toLeaderboardBtn = document.getElementById("toLeaderboardBtn");
+
+  var levelList = document.getElementById("levelList");
+  var levelBackBtn = document.getElementById("levelBackBtn");
+  var gameBackBtn = document.getElementById("gameBackBtn");
 
   var board = document.getElementById("board");
   var movesEl = document.getElementById("moves");
@@ -844,6 +1039,8 @@
   var winNameEl = document.getElementById("winName");
   var playAgainBtn = document.getElementById("playAgain");
   var winLeaderboardBtn = document.getElementById("winLeaderboardBtn");
+  var winNextBtn = document.getElementById("winNextBtn");
+  var winLevelsBtn = document.getElementById("winLevelsBtn");
 
   var lbList = document.getElementById("lbList");
   var lbStatus = document.getElementById("lbStatus");
@@ -871,8 +1068,10 @@
   // ---- Screen switching ----
   function showScreen(screen) {
     startScreen.classList.remove("active");
+    levelSelectScreen.classList.remove("active");
     gameScreen.classList.remove("active");
     leaderboardScreen.classList.remove("active");
+    // (shop/rewards screens are added in FEAT-004 and must be listed here too)
     screen.classList.add("active");
   }
 
@@ -1088,7 +1287,7 @@
 
   function buildDeck() {
     var pool = shuffle(EMOJI_POOL.slice());
-    var chosen = pool.slice(0, PAIRS);
+    var chosen = pool.slice(0, currentLevel.pairs);
     var deck = chosen.concat(chosen);
     return shuffle(deck);
   }
@@ -1146,7 +1345,7 @@
       matchedCount++;
       playMatch();
       resetTurn();
-      if (matchedCount === PAIRS) {
+      if (matchedCount === currentLevel.pairs) {
         setTimeout(showWin, 550);
       }
     } else {
@@ -1166,15 +1365,70 @@
   }
 
   function showWin() {
+    var levelNumber = currentLevel.level;
+
     // Always save locally first (offline-safe), then submit in background.
+    // Score = moves for the finished level — kept EXACTLY as before.
     recordScore(currentPlayer, moves);
     submitScoreToServer(currentPlayer, moves);
 
+    // ----- Per-player progress: best moves + unlock next level -----
+    if (currentProgress) {
+      var prevBest = currentProgress.bestMoves[levelNumber];
+      if (typeof prevBest !== "number" || moves < prevBest) {
+        currentProgress.bestMoves[levelNumber] = moves;
+      }
+
+      var nextConfig = getLevelConfig(levelNumber + 1);
+      if (nextConfig &&
+          currentProgress.unlockedLevels.indexOf(nextConfig.level) === -1) {
+        currentProgress.unlockedLevels.push(nextConfig.level);
+        currentProgress.unlockedLevels.sort(function (a, b) { return a - b; });
+      }
+
+      /* ===== COIN INTEGRATION POINT (FEAT-003) =====
+         Coins are awarded here, AFTER the score is recorded/submitted and
+         BEFORE saveProgress() persists the run. FEAT-003 should add the
+         coin math (per-match coins + a fewer-moves bonus) and update
+         currentProgress.coins at this point, e.g.:
+             awardCoinsForLevel(currentLevel, moves);
+         Do not add real-money purchases — coins are earned by playing. */
+
+      saveProgress(currentPlayer, currentProgress);
+    }
+
+    // ----- Win banner -----
     finalMovesEl.textContent = moves;
     winNameEl.textContent = currentPlayer;
+
+    // "Next Level" only when there is a (now unlocked) next level.
+    var next = getLevelConfig(levelNumber + 1);
+    var hasNext = !!(next && currentProgress &&
+      currentProgress.unlockedLevels.indexOf(next.level) !== -1);
+    winNextBtn.style.display = hasNext ? "" : "none";
+
     overlay.classList.add("show");
     playCheer();
     launchConfetti();
+  }
+
+  // Apply the active level's grid sizing (cols/rows/gap/aspect-ratio) and
+  // emoji font density to the board via CSS custom properties.
+  function applyLevelLayout(level) {
+    board.style.setProperty("--cols", level.cols);
+    board.style.setProperty("--rows", level.rows);
+    board.style.setProperty("--gap", level.gap + "px");
+    board.style.setProperty("--face-font", level.faceFont + "px");
+    board.style.setProperty("--star-font", level.starFont + "px");
+    board.style.setProperty("--face-radius",
+      (level.pairs >= 12 ? 12 : 18) + "px");
+  }
+
+  // Start a specific level. Sets currentLevel then runs the shared game
+  // setup. Pass a LEVELS config object.
+  function startLevel(level) {
+    currentLevel = level;
+    startGame();
   }
 
   function startGame() {
@@ -1189,10 +1443,68 @@
     movesEl.textContent = "0";
     scorePlayerEl.textContent = currentPlayer;
 
+    applyLevelLayout(currentLevel);
+
     var deck = buildDeck();
     for (var i = 0; i < deck.length; i++) {
       board.appendChild(createCard(deck[i]));
     }
+  }
+
+  // ---- Level select screen ----
+  function isLevelUnlocked(levelNumber) {
+    return !!(currentProgress &&
+      currentProgress.unlockedLevels.indexOf(levelNumber) !== -1);
+  }
+
+  // Build the list of level buttons from LEVELS + currentProgress.
+  function renderLevelSelect() {
+    levelList.innerHTML = "";
+    for (var i = 0; i < LEVELS.length; i++) {
+      (function (level) {
+        var unlocked = isLevelUnlocked(level.level);
+        var best = currentProgress ? currentProgress.bestMoves[level.level] : null;
+
+        var li = document.createElement("li");
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "level-btn" + (unlocked ? "" : " locked");
+        btn.disabled = !unlocked;
+
+        var meta = level.pairs + " pairs";
+        if (unlocked && typeof best === "number") {
+          meta += " • Best: " + best + " moves";
+        } else if (unlocked) {
+          meta += " • Not played yet";
+        } else {
+          meta += " • Locked";
+        }
+
+        btn.innerHTML =
+          '<span class="level-badge">' + level.level + '</span>' +
+          '<span class="level-info">' +
+            '<span class="level-title">Level ' + level.level + '</span>' +
+            '<span class="level-meta">' + meta + '</span>' +
+          '</span>' +
+          '<span class="level-state">' + (unlocked ? "▶️" : "🔒") + '</span>';
+
+        if (unlocked) {
+          btn.addEventListener("click", function () {
+            ensureAudio();
+            startLevel(level);
+          });
+        }
+
+        li.appendChild(btn);
+        levelList.appendChild(li);
+      })(LEVELS[i]);
+    }
+  }
+
+  // Show the level select screen (refreshing its contents first).
+  function openLevelSelect() {
+    renderLevelSelect();
+    showScreen(levelSelectScreen);
   }
 
   // ---- Confetti / star burst ----
@@ -1253,7 +1565,7 @@
     saveName(name);
     currentProgress = loadProgress(name); // per-player progress layer (FEAT-001)
     ensureAudio(); // unlock audio on a user gesture
-    startGame();
+    openLevelSelect(); // Play! now goes to Level Select instead of straight into a game
   }
 
   // ---- Button wiring ----
@@ -1270,11 +1582,41 @@
     openLeaderboard();
   });
 
+  // Win banner: go to the next (now unlocked) level.
+  winNextBtn.addEventListener("click", function () {
+    var next = getLevelConfig(currentLevel.level + 1);
+    overlay.classList.remove("show");
+    if (next && isLevelUnlocked(next.level)) {
+      startLevel(next);
+    } else {
+      openLevelSelect();
+    }
+  });
+
+  // Win banner: back to level select.
+  winLevelsBtn.addEventListener("click", function () {
+    overlay.classList.remove("show");
+    openLevelSelect();
+  });
+
+  // Level select: Back returns to the start screen.
+  levelBackBtn.addEventListener("click", function () {
+    showScreen(startScreen);
+  });
+
+  // In-game: Back returns to the level select screen.
+  gameBackBtn.addEventListener("click", function () {
+    openLevelSelect();
+  });
+
   lbBackBtn.addEventListener("click", function () {
     showScreen(startScreen);
   });
 
-  playAgainBtn.addEventListener("click", startGame);
+  // Play Again replays the current level.
+  playAgainBtn.addEventListener("click", function () {
+    startGame();
+  });
 
   // ---- Clear board (with confirm step) ----
   clearBoardBtn.addEventListener("click", function () {
