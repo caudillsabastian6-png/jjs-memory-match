@@ -211,6 +211,49 @@
   .name-input::placeholder { color: #c9a7f2; }
   .name-input:focus { border-color: #39d353; }
 
+  /* ---- Coin displays ---- */
+  .coin-total {
+    margin-top: 14px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #fff;
+    background: rgba(255, 210, 63, 0.35);
+    border: 3px solid #ffd23f;
+    border-radius: 999px;
+    padding: 6px 16px;
+    display: inline-block;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
+  }
+
+  .coin-pill {
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+    background: rgba(255, 210, 63, 0.35);
+    border: 2px solid #ffd23f;
+    border-radius: 999px;
+    padding: 6px 12px;
+    white-space: nowrap;
+  }
+
+  /* Floating "+coins" feedback on a match */
+  .coin-float {
+    position: fixed;
+    z-index: 11;
+    font-size: 22px;
+    font-weight: bold;
+    color: #ffd23f;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+    animation: coinFloat 0.9s ease forwards;
+  }
+
+  @keyframes coinFloat {
+    0%   { transform: translateY(0) scale(0.8); opacity: 0; }
+    20%  { transform: translateY(-10px) scale(1.1); opacity: 1; }
+    100% { transform: translateY(-60px) scale(1); opacity: 0; }
+  }
+
   /* ---- Scoreboard ---- */
   .scoreboard {
     display: flex;
@@ -683,6 +726,7 @@
           autocapitalize="words"
           placeholder="Type your name"
         />
+        <div class="coin-total" id="startCoins">🪙 <span id="startCoinCount">0</span></div>
       </div>
       <button class="big-btn" id="startBtn" disabled>Play!</button>
       <button class="big-btn purple" id="toLeaderboardBtn">🏆 Leaderboard</button>
@@ -707,7 +751,8 @@
       </div>
       <div class="game-controls">
         <button class="mini-btn" id="gameBackBtn" type="button">⬅ Levels</button>
-        <!-- Peek/hint button is added in FEAT-003 (coins). -->
+        <span class="coin-pill" id="gameCoins">🪙 <span id="gameCoinCount">0</span></span>
+        <button class="mini-btn" id="peekBtn" type="button">Peek 👀 (10🪙)</button>
       </div>
       <div class="board" id="board" aria-label="Memory game board"></div>
     </div>
@@ -729,7 +774,7 @@
     <div class="banner">
       <div class="emoji">🎮🏆🎮</div>
       <h2>You Win!</h2>
-      <p>Great job, <b id="winName">Player</b>!<br />You did it in <b id="finalMoves">0</b> moves!</p>
+      <p>Great job, <b id="winName">Player</b>!<br />You did it in <b id="finalMoves">0</b> moves!<br />🪙 You earned <b id="coinsEarned">0</b> coins!</p>
       <div class="btn-row">
         <button class="big-btn" id="winNextBtn">Next Level ➡</button>
         <button class="big-btn secondary" id="playAgain">Play Again</button>
@@ -879,6 +924,65 @@
   // Defaults to level 1 so buildDeck()/win-check always have a pair count.
   var currentLevel = LEVELS[0];
 
+  /* ===================== COINS (FEAT-003) =====================
+     Kid-friendly coin economy. Coins can ONLY be earned by playing —
+     there is no real-money purchase anywhere. Players earn coins for
+     every match and a bonus for finishing a level in fewer moves.
+
+     Formula (kept simple so the README can describe it):
+       • Each matched pair          -> COINS_PER_MATCH coins (5).
+       • Finishing a level bonus     -> a "par" of (pairs * 2) moves is the
+         expected number of moves. Every move UNDER par earns
+         COINS_PER_MOVE_UNDER_PAR coins (2). Finishing right at or over par
+         still gives a small flat LEVEL_CLEAR_BONUS (5) just for clearing.
+       bonus = LEVEL_CLEAR_BONUS + max(0, par - moves) * COINS_PER_MOVE_UNDER_PAR
+     A Peek (hint) costs HINT_COST coins. ===================================== */
+  var COINS_PER_MATCH = 5;
+  var LEVEL_CLEAR_BONUS = 5;
+  var COINS_PER_MOVE_UNDER_PAR = 2;
+  var HINT_COST = 10;
+  var PEEK_DURATION_MS = 2000;
+
+  // The expected ("par") number of moves for a level: two moves per pair.
+  function levelPar(level) {
+    return level.pairs * 2;
+  }
+
+  // Finish bonus: a flat clear bonus plus extra coins for every move the
+  // player finished UNDER par. Larger for fewer moves; never negative.
+  function finishBonus(level, moveCount) {
+    var par = levelPar(level);
+    var underPar = par - moveCount;
+    if (underPar < 0) underPar = 0;
+    return LEVEL_CLEAR_BONUS + underPar * COINS_PER_MOVE_UNDER_PAR;
+  }
+
+  // Add coins to the current player's progress and persist. Coins are kept
+  // a non-negative integer. Safe to call with no loaded progress (no-op).
+  function addCoins(amount) {
+    if (!currentProgress) return;
+    amount = Math.floor(amount);
+    if (!isFinite(amount)) return;
+    currentProgress.coins = Math.max(0, Math.floor(currentProgress.coins) + amount);
+    saveProgress(currentPlayer, currentProgress);
+    refreshCoinDisplays();
+  }
+
+  // Award the finish bonus for clearing a level (called at the win flow
+  // integration point). Returns the bonus amount so the banner can show it.
+  function awardCoinsForLevel(level, moveCount) {
+    var bonus = finishBonus(level, moveCount);
+    if (currentProgress) {
+      currentProgress.coins =
+        Math.max(0, Math.floor(currentProgress.coins) + bonus);
+      // saveProgress is called by showWin() right after this; refresh any
+      // visible coin displays now so the balance is current.
+      refreshCoinDisplays();
+    }
+    return bonus;
+  }
+  /* ===================== END COINS ===================== */
+
   var STORAGE_KEY = "jjMemoryMatch.leaderboard";
   var NAME_KEY = "jjMemoryMatch.playerName";
   var SOUND_KEY = "jjMemoryMatch.sound";
@@ -1026,9 +1130,13 @@
   var startBtn = document.getElementById("startBtn");
   var toLeaderboardBtn = document.getElementById("toLeaderboardBtn");
 
+  var startCoinCount = document.getElementById("startCoinCount");
+
   var levelList = document.getElementById("levelList");
   var levelBackBtn = document.getElementById("levelBackBtn");
   var gameBackBtn = document.getElementById("gameBackBtn");
+  var peekBtn = document.getElementById("peekBtn");
+  var gameCoinCount = document.getElementById("gameCoinCount");
 
   var board = document.getElementById("board");
   var movesEl = document.getElementById("moves");
@@ -1037,6 +1145,7 @@
   var overlay = document.getElementById("overlay");
   var finalMovesEl = document.getElementById("finalMoves");
   var winNameEl = document.getElementById("winName");
+  var coinsEarnedEl = document.getElementById("coinsEarned");
   var playAgainBtn = document.getElementById("playAgain");
   var winLeaderboardBtn = document.getElementById("winLeaderboardBtn");
   var winNextBtn = document.getElementById("winNextBtn");
@@ -1064,6 +1173,7 @@
   var currentPlayer = "";
   var currentProgress = null; // per-player progress, loaded in beginFromStart()
   var lbRequestId = 0;
+  var peekActive = false;     // true while a Peek reveal is in progress
 
   // ---- Screen switching ----
   function showScreen(screen) {
@@ -1274,6 +1384,115 @@
     });
   }
 
+  /* ===================== COIN DISPLAYS + PEEK (FEAT-003) ===================== */
+
+  // Current coin balance (0 when no player/progress is loaded).
+  function currentCoins() {
+    return currentProgress ? Math.max(0, Math.floor(currentProgress.coins)) : 0;
+  }
+
+  // Refresh every visible coin count + the Peek button's enabled state.
+  function refreshCoinDisplays() {
+    var coins = currentCoins();
+    if (startCoinCount) startCoinCount.textContent = coins;
+    if (gameCoinCount) gameCoinCount.textContent = coins;
+    updatePeekButton();
+  }
+
+  // Show the saved coin total for a given (possibly empty/new) name on the
+  // start screen, without disturbing the active player's loaded progress.
+  function updateStartCoinsForName(name) {
+    var clean = String(name == null ? "" : name).trim();
+    if (!startCoinCount) return;
+    if (!clean) { startCoinCount.textContent = "0"; return; }
+    var prog = loadProgress(clean);
+    startCoinCount.textContent = Math.max(0, Math.floor(prog.coins));
+  }
+
+  // Keep the Peek button label current and enable/disable it based on the
+  // balance and whether the board is busy (locked/animating or peeking).
+  function updatePeekButton() {
+    if (!peekBtn) return;
+    peekBtn.textContent = "Peek 👀 (" + HINT_COST + "🪙)";
+    var busy = lockBoard || peekActive;
+    peekBtn.disabled = busy || currentCoins() < HINT_COST;
+  }
+
+  // Lightweight floating "+N" coin feedback near a card (reuses juicy style).
+  function floatCoins(amount, anchor) {
+    try {
+      var el = document.createElement("span");
+      el.className = "coin-float";
+      el.textContent = "+" + amount + "🪙";
+      var x = window.innerWidth / 2;
+      var y = window.innerHeight / 2;
+      if (anchor && anchor.getBoundingClientRect) {
+        var r = anchor.getBoundingClientRect();
+        x = r.left + r.width / 2;
+        y = r.top;
+      }
+      el.style.left = x + "px";
+      el.style.top = y + "px";
+      document.body.appendChild(el);
+      setTimeout(function () {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      }, 950);
+    } catch (e) {}
+  }
+
+  // Peek (hint): reveal every not-yet-matched card for exactly 2 seconds,
+  // then flip the still-unmatched cards back to how they were. Costs coins.
+  // Guards against corrupting an in-progress turn: the board is locked for
+  // the whole peek and each card's prior "flipped" state is restored.
+  function doPeek() {
+    if (peekActive) return;
+    if (lockBoard) return;
+    if (currentCoins() < HINT_COST) return;
+    if (!currentProgress) return;
+
+    // Pay for the peek and persist immediately.
+    addCoins(-HINT_COST); // addCoins saves + refreshes displays
+
+    peekActive = true;
+    lockBoard = true;      // freeze card clicks during the reveal
+    updatePeekButton();
+    playPop();
+
+    var cards = board.querySelectorAll(".card");
+    var revealed = []; // cards we temporarily flipped so we can undo them
+    var i, card;
+    for (i = 0; i < cards.length; i++) {
+      card = cards[i];
+      if (card.classList.contains("matched")) continue;
+      // Remember which cards were NOT already showing their face so we can
+      // flip exactly those back (preserves the player's first-pick card).
+      if (!card.classList.contains("flipped")) {
+        card.classList.add("flipped");
+        revealed.push(card);
+      }
+    }
+
+    setTimeout(function () {
+      for (var j = 0; j < revealed.length; j++) {
+        // Only hide cards that are still unmatched (a match can't happen
+        // during the peek since the board is locked, but stay defensive).
+        if (!revealed[j].classList.contains("matched")) {
+          revealed[j].classList.remove("flipped");
+        }
+      }
+      peekActive = false;
+      // Restore the board lock to whatever the turn needs: if the player
+      // had one card flipped before the peek, the turn is still open.
+      lockBoard = false;
+      updatePeekButton();
+    }, PEEK_DURATION_MS);
+  }
+
+  if (peekBtn) {
+    peekBtn.addEventListener("click", doPeek);
+  }
+  /* ===================== END COIN DISPLAYS + PEEK ===================== */
+
   // ---- Deck building ----
   function shuffle(arr) {
     for (var i = arr.length - 1; i > 0; i--) {
@@ -1344,16 +1563,23 @@
       secondCard.classList.add("matched");
       matchedCount++;
       playMatch();
+      // Coins (FEAT-003): reward each matched pair. addCoins saves progress
+      // and refreshes the coin/Peek displays.
+      var coinAnchor = secondCard;
+      addCoins(COINS_PER_MATCH);
+      floatCoins(COINS_PER_MATCH, coinAnchor);
       resetTurn();
       if (matchedCount === currentLevel.pairs) {
         setTimeout(showWin, 550);
       }
     } else {
       lockBoard = true;
+      updatePeekButton(); // disable Peek while the mismatch animates back
       setTimeout(function () {
         firstCard.classList.remove("flipped");
         secondCard.classList.remove("flipped");
         resetTurn();
+        updatePeekButton(); // re-enable Peek once the turn resets
       }, 900);
     }
   }
@@ -1366,6 +1592,7 @@
 
   function showWin() {
     var levelNumber = currentLevel.level;
+    var bonusCoins = 0;
 
     // Always save locally first (offline-safe), then submit in background.
     // Score = moves for the finished level — kept EXACTLY as before.
@@ -1388,11 +1615,11 @@
 
       /* ===== COIN INTEGRATION POINT (FEAT-003) =====
          Coins are awarded here, AFTER the score is recorded/submitted and
-         BEFORE saveProgress() persists the run. FEAT-003 should add the
-         coin math (per-match coins + a fewer-moves bonus) and update
-         currentProgress.coins at this point, e.g.:
-             awardCoinsForLevel(currentLevel, moves);
-         Do not add real-money purchases — coins are earned by playing. */
+         BEFORE saveProgress() persists the run. awardCoinsForLevel() adds a
+         fewer-moves finish bonus to currentProgress.coins (per-match coins
+         were already granted in checkMatch()). Coins are earned by playing;
+         there are no real-money purchases. */
+      bonusCoins = awardCoinsForLevel(currentLevel, moves);
 
       saveProgress(currentPlayer, currentProgress);
     }
@@ -1400,6 +1627,10 @@
     // ----- Win banner -----
     finalMovesEl.textContent = moves;
     winNameEl.textContent = currentPlayer;
+    // Coins earned this run = per-match coins (pairs * COINS_PER_MATCH) + the
+    // finish bonus just awarded.
+    var matchCoins = currentLevel.pairs * COINS_PER_MATCH;
+    coinsEarnedEl.textContent = matchCoins + bonusCoins;
 
     // "Next Level" only when there is a (now unlocked) next level.
     var next = getLevelConfig(levelNumber + 1);
@@ -1442,6 +1673,8 @@
     lockBoard = false;
     movesEl.textContent = "0";
     scorePlayerEl.textContent = currentPlayer;
+    peekActive = false;
+    refreshCoinDisplays(); // sync in-game coin pill + Peek button state
 
     applyLevelLayout(currentLevel);
 
@@ -1549,6 +1782,8 @@
   // ---- Name field wiring ----
   function updateStartEnabled() {
     startBtn.disabled = nameInput.value.trim().length === 0;
+    // Show the entered player's saved coin total (0 for empty/new names).
+    updateStartCoinsForName(nameInput.value);
   }
 
   nameInput.addEventListener("input", updateStartEnabled);
@@ -1564,6 +1799,7 @@
     currentPlayer = name;
     saveName(name);
     currentProgress = loadProgress(name); // per-player progress layer (FEAT-001)
+    refreshCoinDisplays(); // show this player's coin balance everywhere
     ensureAudio(); // unlock audio on a user gesture
     openLevelSelect(); // Play! now goes to Level Select instead of straight into a game
   }
@@ -1601,6 +1837,9 @@
 
   // Level select: Back returns to the start screen.
   levelBackBtn.addEventListener("click", function () {
+    // Reflect the active player's (possibly updated) coin balance.
+    if (currentProgress) startCoinCount.textContent = currentCoins();
+    else updateStartCoinsForName(nameInput.value);
     showScreen(startScreen);
   });
 
