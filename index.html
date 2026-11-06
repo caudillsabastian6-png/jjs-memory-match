@@ -694,6 +694,138 @@
   var SOUND_KEY = "jjMemoryMatch.sound";
   var MAX_SCORES = 10;
 
+  /* ===================== PER-PLAYER PROGRESS STORAGE =====================
+     Progress (coins, unlocked levels, owned/equipped rewards, per-level
+     best moves) is saved per player name in localStorage under a key that
+     is namespaced by the player's (trimmed, lower-cased) name. Later
+     features (levels, coins, hints, shop/rewards) read and write
+     currentProgress via loadProgress()/saveProgress().
+
+     The defaults make the EXISTING game items the free owned+equipped
+     defaults so nothing regresses: the gaming emoji face theme
+     (EMOJI_POOL), the pink-star card back (.face.face-back), and the
+     classic confetti set (launchConfetti pieces). Level 1 is always
+     unlocked.
+     ===================================================================== */
+  var PROGRESS_KEY_PREFIX = "jjMemoryMatch.progress.";
+
+  // Build a fresh defaults object (returns a new object every call so
+  // callers can safely mutate it without touching shared state).
+  function defaultProgress() {
+    return {
+      coins: 0,
+      unlockedLevels: [1],            // level 1 is always unlocked
+      bestMoves: {},                  // map: levelNumber -> fewest moves
+      ownedRewards: {
+        faceThemes: ["gaming"],       // existing EMOJI_POOL theme
+        cardBacks: ["classic"],       // existing pink-star back
+        confetti: ["classic"]         // existing launchConfetti set
+      },
+      equipped: {
+        faceTheme: "gaming",
+        cardBack: "classic",
+        confetti: "classic"
+      }
+    };
+  }
+
+  // Namespaced localStorage key for a given player name.
+  function progressKey(name) {
+    var clean = String(name == null ? "" : name).trim().toLowerCase();
+    return PROGRESS_KEY_PREFIX + encodeURIComponent(clean);
+  }
+
+  // Defensive array-of-strings cleaner that also guarantees a required
+  // default item is present (used for owned reward lists).
+  function mergeOwnedList(stored, required) {
+    var out = [];
+    var seen = {};
+    function add(v) {
+      if (typeof v === "string" && v && !seen[v]) { seen[v] = true; out.push(v); }
+    }
+    add(required);
+    if (Array.isArray(stored)) {
+      for (var i = 0; i < stored.length; i++) add(stored[i]);
+    }
+    return out;
+  }
+
+  // Load progress for a player, merging stored data over the defaults so
+  // new players get defaults and corrupt / partial data never throws.
+  function loadProgress(name) {
+    var base = defaultProgress();
+    try {
+      var raw = localStorage.getItem(progressKey(name));
+      if (!raw) return base;
+      var data = JSON.parse(raw);
+      if (!data || typeof data !== "object") return base;
+
+      // coins
+      if (typeof data.coins === "number" && isFinite(data.coins) && data.coins >= 0) {
+        base.coins = Math.floor(data.coins);
+      }
+
+      // unlockedLevels (always include level 1)
+      if (Array.isArray(data.unlockedLevels)) {
+        var levels = [1];
+        for (var i = 0; i < data.unlockedLevels.length; i++) {
+          var lv = data.unlockedLevels[i];
+          if (typeof lv === "number" && lv >= 1 && levels.indexOf(lv) === -1) {
+            levels.push(lv);
+          }
+        }
+        levels.sort(function (a, b) { return a - b; });
+        base.unlockedLevels = levels;
+      }
+
+      // bestMoves (map of level -> positive number)
+      if (data.bestMoves && typeof data.bestMoves === "object") {
+        var bm = {};
+        for (var k in data.bestMoves) {
+          if (Object.prototype.hasOwnProperty.call(data.bestMoves, k)) {
+            var v = data.bestMoves[k];
+            if (typeof v === "number" && isFinite(v) && v > 0) bm[k] = Math.floor(v);
+          }
+        }
+        base.bestMoves = bm;
+      }
+
+      // ownedRewards (each list keeps its required default item)
+      if (data.ownedRewards && typeof data.ownedRewards === "object") {
+        base.ownedRewards.faceThemes =
+          mergeOwnedList(data.ownedRewards.faceThemes, "gaming");
+        base.ownedRewards.cardBacks =
+          mergeOwnedList(data.ownedRewards.cardBacks, "classic");
+        base.ownedRewards.confetti =
+          mergeOwnedList(data.ownedRewards.confetti, "classic");
+      }
+
+      // equipped (only accept values the player actually owns)
+      if (data.equipped && typeof data.equipped === "object") {
+        if (base.ownedRewards.faceThemes.indexOf(data.equipped.faceTheme) !== -1) {
+          base.equipped.faceTheme = data.equipped.faceTheme;
+        }
+        if (base.ownedRewards.cardBacks.indexOf(data.equipped.cardBack) !== -1) {
+          base.equipped.cardBack = data.equipped.cardBack;
+        }
+        if (base.ownedRewards.confetti.indexOf(data.equipped.confetti) !== -1) {
+          base.equipped.confetti = data.equipped.confetti;
+        }
+      }
+    } catch (e) {
+      return defaultProgress();
+    }
+    return base;
+  }
+
+  // Persist a player's progress. Never throws (storage may be full/blocked).
+  function saveProgress(name, progress) {
+    try {
+      localStorage.setItem(progressKey(name), JSON.stringify(progress));
+    } catch (e) {}
+  }
+  /* ===================== END PER-PLAYER PROGRESS STORAGE ===================== */
+
   // ---- Elements ----
   var startScreen = document.getElementById("startScreen");
   var gameScreen = document.getElementById("gameScreen");
@@ -733,6 +865,7 @@
   var secondCard = null;
   var lockBoard = false;
   var currentPlayer = "";
+  var currentProgress = null; // per-player progress, loaded in beginFromStart()
   var lbRequestId = 0;
 
   // ---- Screen switching ----
@@ -1118,6 +1251,7 @@
     if (!name) return;
     currentPlayer = name;
     saveName(name);
+    currentProgress = loadProgress(name); // per-player progress layer (FEAT-001)
     ensureAudio(); // unlock audio on a user gesture
     startGame();
   }
