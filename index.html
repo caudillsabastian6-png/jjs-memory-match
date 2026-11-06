@@ -211,6 +211,49 @@
   .name-input::placeholder { color: #c9a7f2; }
   .name-input:focus { border-color: #39d353; }
 
+  /* ---- Coin displays ---- */
+  .coin-total {
+    margin-top: 14px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #fff;
+    background: rgba(255, 210, 63, 0.35);
+    border: 3px solid #ffd23f;
+    border-radius: 999px;
+    padding: 6px 16px;
+    display: inline-block;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
+  }
+
+  .coin-pill {
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+    background: rgba(255, 210, 63, 0.35);
+    border: 2px solid #ffd23f;
+    border-radius: 999px;
+    padding: 6px 12px;
+    white-space: nowrap;
+  }
+
+  /* Floating "+coins" feedback on a match */
+  .coin-float {
+    position: fixed;
+    z-index: 11;
+    font-size: 22px;
+    font-weight: bold;
+    color: #ffd23f;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+    animation: coinFloat 0.9s ease forwards;
+  }
+
+  @keyframes coinFloat {
+    0%   { transform: translateY(0) scale(0.8); opacity: 0; }
+    20%  { transform: translateY(-10px) scale(1.1); opacity: 1; }
+    100% { transform: translateY(-60px) scale(1); opacity: 0; }
+  }
+
   /* ---- Scoreboard ---- */
   .scoreboard {
     display: flex;
@@ -244,10 +287,17 @@
   .board {
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(4, 1fr);
-    gap: 12px;
-    aspect-ratio: 3 / 4;
+    /* Columns/rows/gap/aspect-ratio are set per level from JS via inline
+       style + CSS custom properties (--cols, --rows, --gap). Defaults
+       below match Level 1 (3x4) so the board is sane before a level
+       starts. */
+    --cols: 3;
+    --rows: 4;
+    --gap: 12px;
+    grid-template-columns: repeat(var(--cols), 1fr);
+    grid-template-rows: repeat(var(--rows), 1fr);
+    gap: var(--gap);
+    aspect-ratio: calc(var(--cols) / var(--rows));
     margin-bottom: 14px;
   }
 
@@ -297,11 +347,36 @@
   }
 
   .face-back {
+    /* Default (classic) look — the original pink gradient. Reward card
+       backs override this background via a .back-<id> class (FEAT-004). */
     background: linear-gradient(145deg, #ff4e8a, #ff2d6f);
   }
 
+  /* ---- Card-back reward designs (CSS/emoji only) ---- */
+  .face-back.back-classic {
+    background: linear-gradient(145deg, #ff4e8a, #ff2d6f);
+  }
+  .face-back.back-ocean {
+    background: linear-gradient(145deg, #2fb6ff, #0a6cc9);
+  }
+  .face-back.back-galaxy {
+    background: linear-gradient(145deg, #7b2ff7, #2a1163);
+  }
+  .face-back.back-candy {
+    background: linear-gradient(145deg, #ff9ad5, #ff5ea8);
+  }
+  .face-back.back-jungle {
+    background: linear-gradient(145deg, #39d353, #138a2e);
+  }
+
+  .face {
+    /* --face-font / --back-radius are set per level on .board so denser
+       grids get smaller emoji and tighter corners. */
+    border-radius: var(--face-radius, 18px);
+  }
+
   .face-back .star {
-    font-size: clamp(32px, 11vw, 54px);
+    font-size: var(--star-font, clamp(32px, 11vw, 54px));
     color: #ffffff;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
   }
@@ -309,7 +384,7 @@
   .face-front {
     background: #ffffff;
     transform: rotateY(180deg);
-    font-size: clamp(38px, 13vw, 64px);
+    font-size: var(--face-font, clamp(38px, 13vw, 64px));
   }
 
   .card.matched .face-front {
@@ -323,6 +398,273 @@
     35%  { transform: rotateY(180deg) scale(1.22); }
     60%  { transform: rotateY(180deg) scale(0.92); }
     100% { transform: rotateY(180deg) scale(1); }
+  }
+
+  /* ---- Level select ---- */
+  .level-select-card {
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 26px;
+    padding: 20px 16px;
+    width: 100%;
+    max-width: 380px;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    margin-top: 6px;
+  }
+
+  .level-select-card h2 {
+    text-align: center;
+    font-size: 28px;
+    margin-bottom: 14px;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
+  }
+
+  .level-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .level-btn {
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    text-align: left;
+    color: #5a1fb0;
+    background: rgba(255, 255, 255, 0.92);
+    border: none;
+    border-radius: 16px;
+    padding: 12px 14px;
+    cursor: pointer;
+    touch-action: manipulation;
+    box-shadow: 0 5px 0 rgba(0, 0, 0, 0.15);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  }
+
+  .level-btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.15);
+  }
+
+  .level-btn.locked {
+    opacity: 0.55;
+    cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.55);
+  }
+
+  .level-btn.locked:active {
+    transform: none;
+    box-shadow: 0 5px 0 rgba(0, 0, 0, 0.15);
+  }
+
+  .level-badge {
+    flex: 0 0 auto;
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    background: linear-gradient(145deg, #a86bff, #7b2ff7);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: bold;
+  }
+
+  .level-btn.locked .level-badge {
+    background: #b9a7d6;
+  }
+
+  .level-info {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    overflow: hidden;
+  }
+
+  .level-title {
+    font-size: 19px;
+    font-weight: bold;
+  }
+
+  .level-meta {
+    font-size: 14px;
+    color: #8a63c9;
+    font-weight: bold;
+  }
+
+  .level-state {
+    flex: 0 0 auto;
+    font-size: 24px;
+  }
+
+  /* ---- Shop & Rewards screens ---- */
+  .shop-card {
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 26px;
+    padding: 20px 16px;
+    width: 100%;
+    max-width: 400px;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    margin-top: 6px;
+  }
+
+  .shop-card h2 {
+    text-align: center;
+    font-size: 28px;
+    margin-bottom: 6px;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
+  }
+
+  .shop-balance {
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 14px;
+    color: #fff;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
+  }
+
+  .shop-group { margin-bottom: 16px; }
+
+  .shop-group-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
+  }
+
+  .reward-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 16px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    color: #5a1fb0;
+  }
+
+  .reward-preview {
+    flex: 0 0 auto;
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    color: #fff;
+    background: linear-gradient(145deg, #a86bff, #7b2ff7);
+  }
+
+  .reward-info {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    overflow: hidden;
+  }
+
+  .reward-name { font-size: 18px; font-weight: bold; }
+  .reward-sub { font-size: 14px; color: #8a63c9; font-weight: bold; }
+
+  .reward-action { flex: 0 0 auto; }
+
+  .shop-btn {
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+    background: linear-gradient(145deg, #39d353, #1fae3f);
+    border: none;
+    border-radius: 999px;
+    padding: 8px 16px;
+    cursor: pointer;
+    touch-action: manipulation;
+    box-shadow: 0 4px 0 #138a2e;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  }
+  .shop-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #138a2e; }
+  .shop-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 4px 0 #138a2e;
+  }
+
+  .owned-tag {
+    font-size: 15px;
+    font-weight: bold;
+    color: #1fae3f;
+    white-space: nowrap;
+  }
+
+  /* Rewards screen: equip buttons + equipped marker */
+  .equip-btn {
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+    background: linear-gradient(145deg, #a86bff, #7b2ff7);
+    border: none;
+    border-radius: 999px;
+    padding: 8px 16px;
+    cursor: pointer;
+    touch-action: manipulation;
+    box-shadow: 0 4px 0 #5a1fb0;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  }
+  .equip-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #5a1fb0; }
+
+  .reward-row.equipped {
+    outline: 3px solid #39d353;
+    background: #eaffe9;
+  }
+
+  .equipped-tag {
+    font-size: 15px;
+    font-weight: bold;
+    color: #1fae3f;
+    white-space: nowrap;
+  }
+
+  /* ---- In-game controls bar ---- */
+  .game-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .mini-btn {
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.25);
+    border: none;
+    border-radius: 999px;
+    padding: 8px 16px;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: transform 0.08s ease;
+  }
+
+  .mini-btn:active { transform: scale(0.94); }
+
+  .mini-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
   }
 
   /* ---- Leaderboard ---- */
@@ -536,9 +878,23 @@
           autocapitalize="words"
           placeholder="Type your name"
         />
+        <div class="coin-total" id="startCoins">🪙 <span id="startCoinCount">0</span></div>
       </div>
       <button class="big-btn" id="startBtn" disabled>Play!</button>
+      <button class="big-btn secondary" id="toShopBtn" disabled>🛒 Shop</button>
+      <button class="big-btn purple" id="toRewardsBtn" disabled>🎁 Rewards</button>
       <button class="big-btn purple" id="toLeaderboardBtn">🏆 Leaderboard</button>
+    </div>
+
+    <!-- ===== Level Select Screen ===== -->
+    <div class="screen" id="levelSelectScreen">
+      <div class="level-select-card">
+        <h2>🗺️ Pick a Level</h2>
+        <ol class="level-list" id="levelList"></ol>
+      </div>
+      <button class="big-btn secondary" id="levelShopBtn">🛒 Shop</button>
+      <button class="big-btn purple" id="levelRewardsBtn">🎁 Rewards</button>
+      <button class="big-btn secondary" id="levelBackBtn">Back</button>
     </div>
 
     <!-- ===== Game Screen ===== -->
@@ -548,6 +904,11 @@
         <span>•</span>
         <span>Moves:</span>
         <span class="moves-number" id="moves">0</span>
+      </div>
+      <div class="game-controls">
+        <button class="mini-btn" id="gameBackBtn" type="button">⬅ Levels</button>
+        <span class="coin-pill" id="gameCoins">🪙 <span id="gameCoinCount">0</span></span>
+        <button class="mini-btn" id="peekBtn" type="button">Peek 👀 (10🪙)</button>
       </div>
       <div class="board" id="board" aria-label="Memory game board"></div>
     </div>
@@ -562,6 +923,27 @@
       <button class="clear-link" id="clearBoardBtn">Clear board</button>
       <button class="big-btn secondary" id="lbBackBtn">Back</button>
     </div>
+
+    <!-- ===== Shop Screen ===== -->
+    <div class="screen" id="shopScreen">
+      <div class="shop-card">
+        <h2>🛒 Shop</h2>
+        <div class="shop-balance">You have 🪙 <span id="shopCoinCount">0</span></div>
+        <div id="shopGroups"></div>
+      </div>
+      <button class="big-btn secondary" id="shopBackBtn">Back</button>
+    </div>
+
+    <!-- ===== Rewards Screen ===== -->
+    <div class="screen" id="rewardsScreen">
+      <div class="shop-card">
+        <h2>🎁 Rewards</h2>
+        <div class="shop-balance">Tap to equip what you own</div>
+        <div id="rewardsGroups"></div>
+      </div>
+      <button class="big-btn purple" id="rewardsShopBtn">🛒 Go to Shop</button>
+      <button class="big-btn secondary" id="rewardsBackBtn">Back</button>
+    </div>
   </div>
 
   <!-- ===== Win Overlay ===== -->
@@ -569,9 +951,11 @@
     <div class="banner">
       <div class="emoji">🎮🏆🎮</div>
       <h2>You Win!</h2>
-      <p>Great job, <b id="winName">Player</b>!<br />You did it in <b id="finalMoves">0</b> moves!</p>
+      <p>Great job, <b id="winName">Player</b>!<br />You did it in <b id="finalMoves">0</b> moves!<br />🪙 You earned <b id="coinsEarned">0</b> coins!</p>
       <div class="btn-row">
-        <button class="big-btn" id="playAgain">Play Again</button>
+        <button class="big-btn" id="winNextBtn">Next Level ➡</button>
+        <button class="big-btn secondary" id="playAgain">Play Again</button>
+        <button class="big-btn purple" id="winLevelsBtn">🗺️ Level Select</button>
         <button class="big-btn purple" id="winLeaderboardBtn">🏆 Leaderboard</button>
       </div>
     </div>
@@ -688,20 +1072,379 @@
     "🛸", "🚀", "⚡", "🔥", "🎰", "🏅"
   ];
 
-  var PAIRS = 6;
+  /* ===================== REWARD CATALOGS (FEAT-004) =====================
+     All rewards are emoji/CSS only — no images, files, or network calls.
+     Coins (earned only by playing) unlock them in the Shop; owned items are
+     equipped from the Rewards screen. The FREE defaults ('gaming' face
+     theme, 'classic' card back, 'classic' confetti) reproduce the EXACT
+     original look so nothing regresses when nothing is bought.
+
+       • FACE THEMES change which emoji pool the cards use. Every pool has at
+         least 15 distinct emoji so Level 5 (15 pairs) always works.
+       • CARD BACKS change the .face-back design (a CSS class + a back glyph).
+       • CONFETTI STYLES change the win-burst piece array.
+     ===================================================================== */
+
+  // Face theme emoji pools (keyed by theme id). 'gaming' reuses EMOJI_POOL.
+  var FACE_THEME_POOLS = {
+    gaming: EMOJI_POOL,
+    space: [
+      "🚀", "🛸", "🪐", "🌍", "🌙", "⭐",
+      "☄️", "🌟", "👽", "🛰️", "🌌", "☀️",
+      "🔭", "🌠", "🌑", "🌞", "💫", "🧑‍🚀"
+    ],
+    food: [
+      "🍕", "🍔", "🍟", "🌭", "🍦", "🍩",
+      "🍪", "🧁", "🍓", "🍌", "🍎", "🍉",
+      "🍇", "🥨", "🌮", "🍿", "🍭", "🍰"
+    ],
+    animals: [
+      "🐶", "🐱", "🦁", "🐯", "🐮", "🐷",
+      "🐸", "🐵", "🐰", "🦊", "🐻", "🐼",
+      "🐨", "🐤", "🦄", "🐢", "🐙", "🦋"
+    ],
+    sea: [
+      "🐠", "🐟", "🐡", "🦈", "🐬", "🐳",
+      "🐋", "🦑", "🐙", "🦀", "🦞", "🦐",
+      "🐚", "⭐", "🌊", "🐢", "🏝️", "🦭"
+    ]
+  };
+
+  // Return the emoji pool for a given face theme id (falls back to gaming).
+  function faceThemePool(themeId) {
+    var pool = FACE_THEME_POOLS[themeId];
+    return (pool && pool.length) ? pool : EMOJI_POOL;
+  }
+
+  // Card-back designs (keyed by id): a CSS class applied to .face-back plus a
+  // glyph shown on it. 'classic' is the original pink gradient + ★.
+  var CARD_BACKS = {
+    classic: { glyph: "★" },
+    ocean:   { glyph: "🌊" },
+    galaxy:  { glyph: "✨" },
+    candy:   { glyph: "🍭" },
+    jungle:  { glyph: "🍃" }
+  };
+
+  // Confetti piece arrays (keyed by id). 'classic' is the original burst.
+  var CONFETTI_STYLES = {
+    classic: ["⭐", "🎉", "🏆", "🎮", "💎", "✨", "🕹️"],
+    hearts:  ["❤️", "💖", "💗", "💕", "💞", "💓", "✨"],
+    stars:   ["⭐", "🌟", "✨", "💫", "🌠", "🔆", "⚡"],
+    sea:     ["🐠", "🐬", "🌊", "🐚", "⭐", "🦀", "✨"]
+  };
+
+  // Shop catalog: each category lists purchasable rewards with a coin price.
+  // The FREE default of each category is NOT listed here (it is always owned).
+  // Prices scale a little with how fancy an item is; all earned by playing.
+  var SHOP_CATALOG = {
+    faceThemes: [
+      { id: "space",   label: "Space",   preview: "🚀", price: 60 },
+      { id: "food",    label: "Food",    preview: "🍕", price: 60 },
+      { id: "animals", label: "Animals", preview: "🐶", price: 80 },
+      { id: "sea",     label: "Sea",     preview: "🐠", price: 80 }
+    ],
+    cardBacks: [
+      { id: "ocean",  label: "Ocean",  preview: "🌊", price: 40 },
+      { id: "galaxy", label: "Galaxy", preview: "✨", price: 50 },
+      { id: "candy",  label: "Candy",  preview: "🍭", price: 50 },
+      { id: "jungle", label: "Jungle", preview: "🍃", price: 60 }
+    ],
+    confetti: [
+      { id: "hearts", label: "Hearts", preview: "❤️", price: 30 },
+      { id: "stars",  label: "Stars",  preview: "🌟", price: 30 },
+      { id: "sea",    label: "Sea",    preview: "🐠", price: 40 }
+    ]
+  };
+
+  // Human-friendly labels + previews for ALL items (including free defaults)
+  // so the Rewards screen can show owned items nicely.
+  var REWARD_LABELS = {
+    faceThemes: {
+      gaming:  { label: "Gaming", preview: "🎮" },
+      space:   { label: "Space",   preview: "🚀" },
+      food:    { label: "Food",    preview: "🍕" },
+      animals: { label: "Animals", preview: "🐶" },
+      sea:     { label: "Sea",     preview: "🐠" }
+    },
+    cardBacks: {
+      classic: { label: "Classic", preview: "★" },
+      ocean:   { label: "Ocean",   preview: "🌊" },
+      galaxy:  { label: "Galaxy",  preview: "✨" },
+      candy:   { label: "Candy",   preview: "🍭" },
+      jungle:  { label: "Jungle",  preview: "🍃" }
+    },
+    confetti: {
+      classic: { label: "Classic", preview: "🎉" },
+      hearts:  { label: "Hearts",  preview: "❤️" },
+      stars:   { label: "Stars",   preview: "🌟" },
+      sea:     { label: "Sea",     preview: "🐠" }
+    }
+  };
+
+  // Maps a reward category to the matching currentProgress.equipped key.
+  var EQUIP_KEY = {
+    faceThemes: "faceTheme",
+    cardBacks: "cardBack",
+    confetti: "confetti"
+  };
+  /* ===================== END REWARD CATALOGS ===================== */
+
+  /* ===================== LEVELS =====================
+     Five levels of growing difficulty. Each level drives the deck size
+     (pairs) and the board grid (cols/rows) plus density tuning (gap and
+     emoji font size) so every grid fits the phone-first 480px container
+     with tappable cards.
+       cols * rows === pairs * 2 (every card has a slot).
+       6 -> 12 (3x4), 8 -> 16 (4x4), 10 -> 20 (4x5),
+       12 -> 24 (4x6), 15 -> 30 (5x6).
+     ===================================================================== */
+  var LEVELS = [
+    { level: 1, pairs: 6,  cols: 3, rows: 4, gap: 12, faceFont: 44, starFont: 40 },
+    { level: 2, pairs: 8,  cols: 4, rows: 4, gap: 10, faceFont: 34, starFont: 30 },
+    { level: 3, pairs: 10, cols: 4, rows: 5, gap: 9,  faceFont: 30, starFont: 26 },
+    { level: 4, pairs: 12, cols: 4, rows: 6, gap: 8,  faceFont: 28, starFont: 24 },
+    { level: 5, pairs: 15, cols: 5, rows: 6, gap: 6,  faceFont: 22, starFont: 20 }
+  ];
+
+  // Look up a level config by its level number (returns null if missing).
+  function getLevelConfig(levelNumber) {
+    for (var i = 0; i < LEVELS.length; i++) {
+      if (LEVELS[i].level === levelNumber) return LEVELS[i];
+    }
+    return null;
+  }
+
+  // The active level config while a game is in progress. Set by startLevel().
+  // Defaults to level 1 so buildDeck()/win-check always have a pair count.
+  var currentLevel = LEVELS[0];
+
+  /* ===================== COINS (FEAT-003) =====================
+     Kid-friendly coin economy. Coins can ONLY be earned by playing —
+     there is no real-money purchase anywhere. Players earn coins for
+     every match and a bonus for finishing a level in fewer moves.
+
+     Formula (kept simple so the README can describe it):
+       • Each matched pair          -> COINS_PER_MATCH coins (5).
+       • Finishing a level bonus     -> a "par" of (pairs * 2) moves is the
+         expected number of moves. Every move UNDER par earns
+         COINS_PER_MOVE_UNDER_PAR coins (2). Finishing right at or over par
+         still gives a small flat LEVEL_CLEAR_BONUS (5) just for clearing.
+       bonus = LEVEL_CLEAR_BONUS + max(0, par - moves) * COINS_PER_MOVE_UNDER_PAR
+     A Peek (hint) costs HINT_COST coins. ===================================== */
+  var COINS_PER_MATCH = 5;
+  var LEVEL_CLEAR_BONUS = 5;
+  var COINS_PER_MOVE_UNDER_PAR = 2;
+  var HINT_COST = 10;
+  var PEEK_DURATION_MS = 2000;
+
+  // The expected ("par") number of moves for a level: two moves per pair.
+  function levelPar(level) {
+    return level.pairs * 2;
+  }
+
+  // Finish bonus: a flat clear bonus plus extra coins for every move the
+  // player finished UNDER par. Larger for fewer moves; never negative.
+  function finishBonus(level, moveCount) {
+    var par = levelPar(level);
+    var underPar = par - moveCount;
+    if (underPar < 0) underPar = 0;
+    return LEVEL_CLEAR_BONUS + underPar * COINS_PER_MOVE_UNDER_PAR;
+  }
+
+  // Add coins to the current player's progress and persist. Coins are kept
+  // a non-negative integer. Safe to call with no loaded progress (no-op).
+  function addCoins(amount) {
+    if (!currentProgress) return;
+    amount = Math.floor(amount);
+    if (!isFinite(amount)) return;
+    currentProgress.coins = Math.max(0, Math.floor(currentProgress.coins) + amount);
+    saveProgress(currentPlayer, currentProgress);
+    refreshCoinDisplays();
+  }
+
+  // Award the finish bonus for clearing a level (called at the win flow
+  // integration point). Returns the bonus amount so the banner can show it.
+  function awardCoinsForLevel(level, moveCount) {
+    var bonus = finishBonus(level, moveCount);
+    if (currentProgress) {
+      currentProgress.coins =
+        Math.max(0, Math.floor(currentProgress.coins) + bonus);
+      // saveProgress is called by showWin() right after this; refresh any
+      // visible coin displays now so the balance is current.
+      refreshCoinDisplays();
+    }
+    return bonus;
+  }
+  /* ===================== END COINS ===================== */
+
   var STORAGE_KEY = "jjMemoryMatch.leaderboard";
   var NAME_KEY = "jjMemoryMatch.playerName";
   var SOUND_KEY = "jjMemoryMatch.sound";
   var MAX_SCORES = 10;
 
+  /* ===================== PER-PLAYER PROGRESS STORAGE =====================
+     Progress (coins, unlocked levels, owned/equipped rewards, per-level
+     best moves) is saved per player name in localStorage under a key that
+     is namespaced by the player's (trimmed, lower-cased) name. Later
+     features (levels, coins, hints, shop/rewards) read and write
+     currentProgress via loadProgress()/saveProgress().
+
+     The defaults make the EXISTING game items the free owned+equipped
+     defaults so nothing regresses: the gaming emoji face theme
+     (EMOJI_POOL), the pink-star card back (.face.face-back), and the
+     classic confetti set (launchConfetti pieces). Level 1 is always
+     unlocked.
+     ===================================================================== */
+  var PROGRESS_KEY_PREFIX = "jjMemoryMatch.progress.";
+
+  // Build a fresh defaults object (returns a new object every call so
+  // callers can safely mutate it without touching shared state).
+  function defaultProgress() {
+    return {
+      coins: 0,
+      unlockedLevels: [1],            // level 1 is always unlocked
+      bestMoves: {},                  // map: levelNumber -> fewest moves
+      ownedRewards: {
+        faceThemes: ["gaming"],       // existing EMOJI_POOL theme
+        cardBacks: ["classic"],       // existing pink-star back
+        confetti: ["classic"]         // existing launchConfetti set
+      },
+      equipped: {
+        faceTheme: "gaming",
+        cardBack: "classic",
+        confetti: "classic"
+      }
+    };
+  }
+
+  // Namespaced localStorage key for a given player name.
+  function progressKey(name) {
+    var clean = String(name == null ? "" : name).trim().toLowerCase();
+    return PROGRESS_KEY_PREFIX + encodeURIComponent(clean);
+  }
+
+  // Defensive array-of-strings cleaner that also guarantees a required
+  // default item is present (used for owned reward lists).
+  function mergeOwnedList(stored, required) {
+    var out = [];
+    var seen = {};
+    function add(v) {
+      if (typeof v === "string" && v && !seen[v]) { seen[v] = true; out.push(v); }
+    }
+    add(required);
+    if (Array.isArray(stored)) {
+      for (var i = 0; i < stored.length; i++) add(stored[i]);
+    }
+    return out;
+  }
+
+  // Load progress for a player, merging stored data over the defaults so
+  // new players get defaults and corrupt / partial data never throws.
+  function loadProgress(name) {
+    var base = defaultProgress();
+    try {
+      var raw = localStorage.getItem(progressKey(name));
+      if (!raw) return base;
+      var data = JSON.parse(raw);
+      if (!data || typeof data !== "object") return base;
+
+      // coins
+      if (typeof data.coins === "number" && isFinite(data.coins) && data.coins >= 0) {
+        base.coins = Math.floor(data.coins);
+      }
+
+      // unlockedLevels (always include level 1)
+      if (Array.isArray(data.unlockedLevels)) {
+        var levels = [1];
+        for (var i = 0; i < data.unlockedLevels.length; i++) {
+          var lv = data.unlockedLevels[i];
+          if (typeof lv === "number" && lv >= 1 && levels.indexOf(lv) === -1) {
+            levels.push(lv);
+          }
+        }
+        levels.sort(function (a, b) { return a - b; });
+        base.unlockedLevels = levels;
+      }
+
+      // bestMoves (map of level -> positive number)
+      if (data.bestMoves && typeof data.bestMoves === "object") {
+        var bm = {};
+        for (var k in data.bestMoves) {
+          if (Object.prototype.hasOwnProperty.call(data.bestMoves, k)) {
+            var v = data.bestMoves[k];
+            if (typeof v === "number" && isFinite(v) && v > 0) bm[k] = Math.floor(v);
+          }
+        }
+        base.bestMoves = bm;
+      }
+
+      // ownedRewards (each list keeps its required default item)
+      if (data.ownedRewards && typeof data.ownedRewards === "object") {
+        base.ownedRewards.faceThemes =
+          mergeOwnedList(data.ownedRewards.faceThemes, "gaming");
+        base.ownedRewards.cardBacks =
+          mergeOwnedList(data.ownedRewards.cardBacks, "classic");
+        base.ownedRewards.confetti =
+          mergeOwnedList(data.ownedRewards.confetti, "classic");
+      }
+
+      // equipped (only accept values the player actually owns)
+      if (data.equipped && typeof data.equipped === "object") {
+        if (base.ownedRewards.faceThemes.indexOf(data.equipped.faceTheme) !== -1) {
+          base.equipped.faceTheme = data.equipped.faceTheme;
+        }
+        if (base.ownedRewards.cardBacks.indexOf(data.equipped.cardBack) !== -1) {
+          base.equipped.cardBack = data.equipped.cardBack;
+        }
+        if (base.ownedRewards.confetti.indexOf(data.equipped.confetti) !== -1) {
+          base.equipped.confetti = data.equipped.confetti;
+        }
+      }
+    } catch (e) {
+      return defaultProgress();
+    }
+    return base;
+  }
+
+  // Persist a player's progress. Never throws (storage may be full/blocked).
+  function saveProgress(name, progress) {
+    try {
+      localStorage.setItem(progressKey(name), JSON.stringify(progress));
+    } catch (e) {}
+  }
+  /* ===================== END PER-PLAYER PROGRESS STORAGE ===================== */
+
   // ---- Elements ----
   var startScreen = document.getElementById("startScreen");
+  var levelSelectScreen = document.getElementById("levelSelectScreen");
   var gameScreen = document.getElementById("gameScreen");
   var leaderboardScreen = document.getElementById("leaderboardScreen");
+  var shopScreen = document.getElementById("shopScreen");
+  var rewardsScreen = document.getElementById("rewardsScreen");
 
   var nameInput = document.getElementById("nameInput");
   var startBtn = document.getElementById("startBtn");
   var toLeaderboardBtn = document.getElementById("toLeaderboardBtn");
+  var toShopBtn = document.getElementById("toShopBtn");
+  var toRewardsBtn = document.getElementById("toRewardsBtn");
+
+  var startCoinCount = document.getElementById("startCoinCount");
+
+  var shopCoinCount = document.getElementById("shopCoinCount");
+  var shopGroups = document.getElementById("shopGroups");
+  var shopBackBtn = document.getElementById("shopBackBtn");
+  var rewardsGroups = document.getElementById("rewardsGroups");
+  var rewardsBackBtn = document.getElementById("rewardsBackBtn");
+  var rewardsShopBtn = document.getElementById("rewardsShopBtn");
+
+  var levelList = document.getElementById("levelList");
+  var levelBackBtn = document.getElementById("levelBackBtn");
+  var levelShopBtn = document.getElementById("levelShopBtn");
+  var levelRewardsBtn = document.getElementById("levelRewardsBtn");
+  var gameBackBtn = document.getElementById("gameBackBtn");
+  var peekBtn = document.getElementById("peekBtn");
+  var gameCoinCount = document.getElementById("gameCoinCount");
 
   var board = document.getElementById("board");
   var movesEl = document.getElementById("moves");
@@ -710,8 +1453,11 @@
   var overlay = document.getElementById("overlay");
   var finalMovesEl = document.getElementById("finalMoves");
   var winNameEl = document.getElementById("winName");
+  var coinsEarnedEl = document.getElementById("coinsEarned");
   var playAgainBtn = document.getElementById("playAgain");
   var winLeaderboardBtn = document.getElementById("winLeaderboardBtn");
+  var winNextBtn = document.getElementById("winNextBtn");
+  var winLevelsBtn = document.getElementById("winLevelsBtn");
 
   var lbList = document.getElementById("lbList");
   var lbStatus = document.getElementById("lbStatus");
@@ -733,13 +1479,18 @@
   var secondCard = null;
   var lockBoard = false;
   var currentPlayer = "";
+  var currentProgress = null; // per-player progress, loaded in beginFromStart()
   var lbRequestId = 0;
+  var peekActive = false;     // true while a Peek reveal is in progress
 
   // ---- Screen switching ----
   function showScreen(screen) {
     startScreen.classList.remove("active");
+    levelSelectScreen.classList.remove("active");
     gameScreen.classList.remove("active");
     leaderboardScreen.classList.remove("active");
+    shopScreen.classList.remove("active");
+    rewardsScreen.classList.remove("active");
     screen.classList.add("active");
   }
 
@@ -942,6 +1693,115 @@
     });
   }
 
+  /* ===================== COIN DISPLAYS + PEEK (FEAT-003) ===================== */
+
+  // Current coin balance (0 when no player/progress is loaded).
+  function currentCoins() {
+    return currentProgress ? Math.max(0, Math.floor(currentProgress.coins)) : 0;
+  }
+
+  // Refresh every visible coin count + the Peek button's enabled state.
+  function refreshCoinDisplays() {
+    var coins = currentCoins();
+    if (startCoinCount) startCoinCount.textContent = coins;
+    if (gameCoinCount) gameCoinCount.textContent = coins;
+    updatePeekButton();
+  }
+
+  // Show the saved coin total for a given (possibly empty/new) name on the
+  // start screen, without disturbing the active player's loaded progress.
+  function updateStartCoinsForName(name) {
+    var clean = String(name == null ? "" : name).trim();
+    if (!startCoinCount) return;
+    if (!clean) { startCoinCount.textContent = "0"; return; }
+    var prog = loadProgress(clean);
+    startCoinCount.textContent = Math.max(0, Math.floor(prog.coins));
+  }
+
+  // Keep the Peek button label current and enable/disable it based on the
+  // balance and whether the board is busy (locked/animating or peeking).
+  function updatePeekButton() {
+    if (!peekBtn) return;
+    peekBtn.textContent = "Peek 👀 (" + HINT_COST + "🪙)";
+    var busy = lockBoard || peekActive;
+    peekBtn.disabled = busy || currentCoins() < HINT_COST;
+  }
+
+  // Lightweight floating "+N" coin feedback near a card (reuses juicy style).
+  function floatCoins(amount, anchor) {
+    try {
+      var el = document.createElement("span");
+      el.className = "coin-float";
+      el.textContent = "+" + amount + "🪙";
+      var x = window.innerWidth / 2;
+      var y = window.innerHeight / 2;
+      if (anchor && anchor.getBoundingClientRect) {
+        var r = anchor.getBoundingClientRect();
+        x = r.left + r.width / 2;
+        y = r.top;
+      }
+      el.style.left = x + "px";
+      el.style.top = y + "px";
+      document.body.appendChild(el);
+      setTimeout(function () {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      }, 950);
+    } catch (e) {}
+  }
+
+  // Peek (hint): reveal every not-yet-matched card for exactly 2 seconds,
+  // then flip the still-unmatched cards back to how they were. Costs coins.
+  // Guards against corrupting an in-progress turn: the board is locked for
+  // the whole peek and each card's prior "flipped" state is restored.
+  function doPeek() {
+    if (peekActive) return;
+    if (lockBoard) return;
+    if (currentCoins() < HINT_COST) return;
+    if (!currentProgress) return;
+
+    // Pay for the peek and persist immediately.
+    addCoins(-HINT_COST); // addCoins saves + refreshes displays
+
+    peekActive = true;
+    lockBoard = true;      // freeze card clicks during the reveal
+    updatePeekButton();
+    playPop();
+
+    var cards = board.querySelectorAll(".card");
+    var revealed = []; // cards we temporarily flipped so we can undo them
+    var i, card;
+    for (i = 0; i < cards.length; i++) {
+      card = cards[i];
+      if (card.classList.contains("matched")) continue;
+      // Remember which cards were NOT already showing their face so we can
+      // flip exactly those back (preserves the player's first-pick card).
+      if (!card.classList.contains("flipped")) {
+        card.classList.add("flipped");
+        revealed.push(card);
+      }
+    }
+
+    setTimeout(function () {
+      for (var j = 0; j < revealed.length; j++) {
+        // Only hide cards that are still unmatched (a match can't happen
+        // during the peek since the board is locked, but stay defensive).
+        if (!revealed[j].classList.contains("matched")) {
+          revealed[j].classList.remove("flipped");
+        }
+      }
+      peekActive = false;
+      // Restore the board lock to whatever the turn needs: if the player
+      // had one card flipped before the peek, the turn is still open.
+      lockBoard = false;
+      updatePeekButton();
+    }, PEEK_DURATION_MS);
+  }
+
+  if (peekBtn) {
+    peekBtn.addEventListener("click", doPeek);
+  }
+  /* ===================== END COIN DISPLAYS + PEEK ===================== */
+
   // ---- Deck building ----
   function shuffle(arr) {
     for (var i = arr.length - 1; i > 0; i--) {
@@ -953,11 +1813,27 @@
     return arr;
   }
 
+  // Which face-theme emoji pool to use for the deck: the equipped theme's
+  // pool (default 'gaming' = the original EMOJI_POOL) so a fresh player and
+  // the default equip reproduce the exact original card faces.
+  function equippedFacePool() {
+    var themeId = (currentProgress && currentProgress.equipped)
+      ? currentProgress.equipped.faceTheme : "gaming";
+    return faceThemePool(themeId);
+  }
+
   function buildDeck() {
-    var pool = shuffle(EMOJI_POOL.slice());
-    var chosen = pool.slice(0, PAIRS);
+    var pool = shuffle(equippedFacePool().slice());
+    var chosen = pool.slice(0, currentLevel.pairs);
     var deck = chosen.concat(chosen);
     return shuffle(deck);
+  }
+
+  // The equipped card-back id (default 'classic' = original pink gradient + ★).
+  function equippedCardBackId() {
+    var id = (currentProgress && currentProgress.equipped)
+      ? currentProgress.equipped.cardBack : "classic";
+    return CARD_BACKS[id] ? id : "classic";
   }
 
   function createCard(emoji) {
@@ -967,9 +1843,14 @@
     card.setAttribute("aria-label", "Card");
     card.dataset.emoji = emoji;
 
+    var backId = equippedCardBackId();
+    var backGlyph = CARD_BACKS[backId].glyph;
+
     card.innerHTML =
       '<div class="card-inner">' +
-        '<div class="face face-back"><span class="star">★</span></div>' +
+        '<div class="face face-back back-' + backId + '">' +
+          '<span class="star">' + backGlyph + '</span>' +
+        '</div>' +
         '<div class="face face-front">' + emoji + '</div>' +
       '</div>';
 
@@ -1012,16 +1893,23 @@
       secondCard.classList.add("matched");
       matchedCount++;
       playMatch();
+      // Coins (FEAT-003): reward each matched pair. addCoins saves progress
+      // and refreshes the coin/Peek displays.
+      var coinAnchor = secondCard;
+      addCoins(COINS_PER_MATCH);
+      floatCoins(COINS_PER_MATCH, coinAnchor);
       resetTurn();
-      if (matchedCount === PAIRS) {
+      if (matchedCount === currentLevel.pairs) {
         setTimeout(showWin, 550);
       }
     } else {
       lockBoard = true;
+      updatePeekButton(); // disable Peek while the mismatch animates back
       setTimeout(function () {
         firstCard.classList.remove("flipped");
         secondCard.classList.remove("flipped");
         resetTurn();
+        updatePeekButton(); // re-enable Peek once the turn resets
       }, 900);
     }
   }
@@ -1033,15 +1921,75 @@
   }
 
   function showWin() {
+    var levelNumber = currentLevel.level;
+    var bonusCoins = 0;
+
     // Always save locally first (offline-safe), then submit in background.
+    // Score = moves for the finished level — kept EXACTLY as before.
     recordScore(currentPlayer, moves);
     submitScoreToServer(currentPlayer, moves);
 
+    // ----- Per-player progress: best moves + unlock next level -----
+    if (currentProgress) {
+      var prevBest = currentProgress.bestMoves[levelNumber];
+      if (typeof prevBest !== "number" || moves < prevBest) {
+        currentProgress.bestMoves[levelNumber] = moves;
+      }
+
+      var nextConfig = getLevelConfig(levelNumber + 1);
+      if (nextConfig &&
+          currentProgress.unlockedLevels.indexOf(nextConfig.level) === -1) {
+        currentProgress.unlockedLevels.push(nextConfig.level);
+        currentProgress.unlockedLevels.sort(function (a, b) { return a - b; });
+      }
+
+      /* ===== COIN INTEGRATION POINT (FEAT-003) =====
+         Coins are awarded here, AFTER the score is recorded/submitted and
+         BEFORE saveProgress() persists the run. awardCoinsForLevel() adds a
+         fewer-moves finish bonus to currentProgress.coins (per-match coins
+         were already granted in checkMatch()). Coins are earned by playing;
+         there are no real-money purchases. */
+      bonusCoins = awardCoinsForLevel(currentLevel, moves);
+
+      saveProgress(currentPlayer, currentProgress);
+    }
+
+    // ----- Win banner -----
     finalMovesEl.textContent = moves;
     winNameEl.textContent = currentPlayer;
+    // Coins earned this run = per-match coins (pairs * COINS_PER_MATCH) + the
+    // finish bonus just awarded.
+    var matchCoins = currentLevel.pairs * COINS_PER_MATCH;
+    coinsEarnedEl.textContent = matchCoins + bonusCoins;
+
+    // "Next Level" only when there is a (now unlocked) next level.
+    var next = getLevelConfig(levelNumber + 1);
+    var hasNext = !!(next && currentProgress &&
+      currentProgress.unlockedLevels.indexOf(next.level) !== -1);
+    winNextBtn.style.display = hasNext ? "" : "none";
+
     overlay.classList.add("show");
     playCheer();
     launchConfetti();
+  }
+
+  // Apply the active level's grid sizing (cols/rows/gap/aspect-ratio) and
+  // emoji font density to the board via CSS custom properties.
+  function applyLevelLayout(level) {
+    board.style.setProperty("--cols", level.cols);
+    board.style.setProperty("--rows", level.rows);
+    board.style.setProperty("--gap", level.gap + "px");
+    board.style.setProperty("--face-font", level.faceFont + "px");
+    board.style.setProperty("--star-font", level.starFont + "px");
+    board.style.setProperty("--face-radius",
+      (level.pairs >= 12 ? 12 : 18) + "px");
+  }
+
+  // Start a specific level. Sets currentLevel then runs the shared game
+  // setup. Pass a LEVELS config object.
+  function startLevel(level) {
+    currentLevel = level;
+    startGame();
   }
 
   function startGame() {
@@ -1055,6 +2003,10 @@
     lockBoard = false;
     movesEl.textContent = "0";
     scorePlayerEl.textContent = currentPlayer;
+    peekActive = false;
+    refreshCoinDisplays(); // sync in-game coin pill + Peek button state
+
+    applyLevelLayout(currentLevel);
 
     var deck = buildDeck();
     for (var i = 0; i < deck.length; i++) {
@@ -1062,9 +2014,259 @@
     }
   }
 
+  // ---- Level select screen ----
+  function isLevelUnlocked(levelNumber) {
+    return !!(currentProgress &&
+      currentProgress.unlockedLevels.indexOf(levelNumber) !== -1);
+  }
+
+  // Build the list of level buttons from LEVELS + currentProgress.
+  function renderLevelSelect() {
+    levelList.innerHTML = "";
+    for (var i = 0; i < LEVELS.length; i++) {
+      (function (level) {
+        var unlocked = isLevelUnlocked(level.level);
+        var best = currentProgress ? currentProgress.bestMoves[level.level] : null;
+
+        var li = document.createElement("li");
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "level-btn" + (unlocked ? "" : " locked");
+        btn.disabled = !unlocked;
+
+        var meta = level.pairs + " pairs";
+        if (unlocked && typeof best === "number") {
+          meta += " • Best: " + best + " moves";
+        } else if (unlocked) {
+          meta += " • Not played yet";
+        } else {
+          meta += " • Locked";
+        }
+
+        btn.innerHTML =
+          '<span class="level-badge">' + level.level + '</span>' +
+          '<span class="level-info">' +
+            '<span class="level-title">Level ' + level.level + '</span>' +
+            '<span class="level-meta">' + meta + '</span>' +
+          '</span>' +
+          '<span class="level-state">' + (unlocked ? "▶️" : "🔒") + '</span>';
+
+        if (unlocked) {
+          btn.addEventListener("click", function () {
+            ensureAudio();
+            startLevel(level);
+          });
+        }
+
+        li.appendChild(btn);
+        levelList.appendChild(li);
+      })(LEVELS[i]);
+    }
+  }
+
+  // Show the level select screen (refreshing its contents first).
+  function openLevelSelect() {
+    renderLevelSelect();
+    showScreen(levelSelectScreen);
+  }
+
+  /* ===================== SHOP + REWARDS (FEAT-004) =====================
+     With coins (earned only by playing — no real-money purchases) the player
+     buys rewards in the Shop and equips owned rewards from the Rewards
+     screen. Purchases/equips are persisted per player via saveProgress().
+     ===================================================================== */
+
+  var CATEGORY_TITLES = {
+    faceThemes: "Card Faces",
+    cardBacks: "Card Backs",
+    confetti: "Confetti"
+  };
+  var CATEGORY_ORDER = ["faceThemes", "cardBacks", "confetti"];
+
+  // Does the player own this reward id in the given category?
+  function ownsReward(category, id) {
+    return !!(currentProgress &&
+      currentProgress.ownedRewards[category] &&
+      currentProgress.ownedRewards[category].indexOf(id) !== -1);
+  }
+
+  // Buy a reward: deduct coins, add to owned, persist, and refresh the UI.
+  function buyReward(category, id, price) {
+    if (!currentProgress) return;
+    if (ownsReward(category, id)) return;
+    if (currentCoins() < price) return;
+
+    addCoins(-price); // deducts, clamps, saves progress + refreshes coin UI
+    var list = currentProgress.ownedRewards[category];
+    if (list.indexOf(id) === -1) list.push(id);
+    saveProgress(currentPlayer, currentProgress);
+    playMatch();
+    renderShop();      // reflect new 'Owned' state + balances
+    renderRewards();   // the item is now equippable
+    refreshCoinDisplays();
+  }
+
+  // Equip an owned reward: set equipped.<key>, persist, refresh previews.
+  function equipReward(category, id) {
+    if (!currentProgress) return;
+    if (!ownsReward(category, id)) return;
+    currentProgress.equipped[EQUIP_KEY[category]] = id;
+    saveProgress(currentPlayer, currentProgress);
+    playPop();
+    renderRewards();
+  }
+
+  // Build one shop row (preview + name + price/Buy or 'Owned').
+  function buildShopRow(category, item) {
+    var owned = ownsReward(category, item.id);
+    var row = document.createElement("div");
+    row.className = "reward-row";
+
+    var preview = document.createElement("div");
+    preview.className = "reward-preview";
+    preview.textContent = item.preview;
+
+    var info = document.createElement("div");
+    info.className = "reward-info";
+    var name = document.createElement("span");
+    name.className = "reward-name";
+    name.textContent = item.label;
+    var sub = document.createElement("span");
+    sub.className = "reward-sub";
+    sub.textContent = owned ? "In your collection" : ("🪙 " + item.price);
+    info.appendChild(name);
+    info.appendChild(sub);
+
+    var action = document.createElement("div");
+    action.className = "reward-action";
+    if (owned) {
+      var tag = document.createElement("span");
+      tag.className = "owned-tag";
+      tag.textContent = "✔ Owned";
+      action.appendChild(tag);
+    } else {
+      var buyBtn = document.createElement("button");
+      buyBtn.type = "button";
+      buyBtn.className = "shop-btn";
+      buyBtn.textContent = "Buy 🪙" + item.price;
+      buyBtn.disabled = currentCoins() < item.price;
+      buyBtn.addEventListener("click", function () {
+        buyReward(category, item.id, item.price);
+      });
+      action.appendChild(buyBtn);
+    }
+
+    row.appendChild(preview);
+    row.appendChild(info);
+    row.appendChild(action);
+    return row;
+  }
+
+  // Render the whole Shop screen grouped by category.
+  function renderShop() {
+    if (shopCoinCount) shopCoinCount.textContent = currentCoins();
+    shopGroups.innerHTML = "";
+    for (var c = 0; c < CATEGORY_ORDER.length; c++) {
+      var category = CATEGORY_ORDER[c];
+      var items = SHOP_CATALOG[category] || [];
+      var group = document.createElement("div");
+      group.className = "shop-group";
+      var title = document.createElement("div");
+      title.className = "shop-group-title";
+      title.textContent = CATEGORY_TITLES[category];
+      group.appendChild(title);
+      for (var i = 0; i < items.length; i++) {
+        group.appendChild(buildShopRow(category, items[i]));
+      }
+      shopGroups.appendChild(group);
+    }
+  }
+
+  function openShop() {
+    renderShop();
+    showScreen(shopScreen);
+  }
+
+  // Build one rewards row for an OWNED item (equip button or equipped marker).
+  function buildRewardRow(category, id) {
+    var meta = (REWARD_LABELS[category] && REWARD_LABELS[category][id]) ||
+      { label: id, preview: "❔" };
+    var equippedId = currentProgress.equipped[EQUIP_KEY[category]];
+    var isEquipped = (equippedId === id);
+
+    var row = document.createElement("div");
+    row.className = "reward-row" + (isEquipped ? " equipped" : "");
+
+    var preview = document.createElement("div");
+    preview.className = "reward-preview";
+    preview.textContent = meta.preview;
+
+    var info = document.createElement("div");
+    info.className = "reward-info";
+    var name = document.createElement("span");
+    name.className = "reward-name";
+    name.textContent = meta.label;
+    var sub = document.createElement("span");
+    sub.className = "reward-sub";
+    sub.textContent = isEquipped ? "Equipped now" : "Owned";
+    info.appendChild(name);
+    info.appendChild(sub);
+
+    var action = document.createElement("div");
+    action.className = "reward-action";
+    if (isEquipped) {
+      var tag = document.createElement("span");
+      tag.className = "equipped-tag";
+      tag.textContent = "✔ Equipped";
+      action.appendChild(tag);
+    } else {
+      var equipBtn = document.createElement("button");
+      equipBtn.type = "button";
+      equipBtn.className = "equip-btn";
+      equipBtn.textContent = "Equip";
+      equipBtn.addEventListener("click", function () {
+        equipReward(category, id);
+      });
+      action.appendChild(equipBtn);
+    }
+
+    row.appendChild(preview);
+    row.appendChild(info);
+    row.appendChild(action);
+    return row;
+  }
+
+  // Render the Rewards screen: per category, list every owned item.
+  function renderRewards() {
+    rewardsGroups.innerHTML = "";
+    if (!currentProgress) return;
+    for (var c = 0; c < CATEGORY_ORDER.length; c++) {
+      var category = CATEGORY_ORDER[c];
+      var owned = currentProgress.ownedRewards[category] || [];
+      var group = document.createElement("div");
+      group.className = "shop-group";
+      var title = document.createElement("div");
+      title.className = "shop-group-title";
+      title.textContent = CATEGORY_TITLES[category];
+      group.appendChild(title);
+      for (var i = 0; i < owned.length; i++) {
+        group.appendChild(buildRewardRow(category, owned[i]));
+      }
+      rewardsGroups.appendChild(group);
+    }
+  }
+
+  function openRewards() {
+    renderRewards();
+    showScreen(rewardsScreen);
+  }
+  /* ===================== END SHOP + REWARDS ===================== */
+
   // ---- Confetti / star burst ----
   function launchConfetti() {
-    var pieces = ["⭐", "🎉", "🏆", "🎮", "💎", "✨", "🕹️"];
+    var styleId = (currentProgress && currentProgress.equipped)
+      ? currentProgress.equipped.confetti : "classic";
+    var pieces = CONFETTI_STYLES[styleId] || CONFETTI_STYLES.classic;
     var count = 32;
     for (var i = 0; i < count; i++) {
       (function (i) {
@@ -1103,7 +2305,28 @@
 
   // ---- Name field wiring ----
   function updateStartEnabled() {
-    startBtn.disabled = nameInput.value.trim().length === 0;
+    var hasName = nameInput.value.trim().length > 0;
+    startBtn.disabled = !hasName;
+    // Shop + Rewards need a player name too (progress is per player).
+    if (toShopBtn) toShopBtn.disabled = !hasName;
+    if (toRewardsBtn) toRewardsBtn.disabled = !hasName;
+    // Show the entered player's saved coin total (0 for empty/new names).
+    updateStartCoinsForName(nameInput.value);
+  }
+
+  // Make sure a player (and their progress) is active, loading it from the
+  // name box if needed. Returns false when there is no usable name.
+  function ensureActivePlayer() {
+    var name = nameInput.value.trim();
+    if (!name) return false;
+    if (!currentProgress || currentPlayer !== name) {
+      currentPlayer = name;
+      saveName(name);
+      currentProgress = loadProgress(name);
+      refreshCoinDisplays();
+    }
+    ensureAudio();
+    return true;
   }
 
   nameInput.addEventListener("input", updateStartEnabled);
@@ -1118,8 +2341,10 @@
     if (!name) return;
     currentPlayer = name;
     saveName(name);
+    currentProgress = loadProgress(name); // per-player progress layer (FEAT-001)
+    refreshCoinDisplays(); // show this player's coin balance everywhere
     ensureAudio(); // unlock audio on a user gesture
-    startGame();
+    openLevelSelect(); // Play! now goes to Level Select instead of straight into a game
   }
 
   // ---- Button wiring ----
@@ -1130,17 +2355,79 @@
     openLeaderboard();
   });
 
+  // Start screen -> Shop / Rewards (loads the typed player's progress first).
+  toShopBtn.addEventListener("click", function () {
+    if (ensureActivePlayer()) openShop();
+  });
+  toRewardsBtn.addEventListener("click", function () {
+    if (ensureActivePlayer()) openRewards();
+  });
+
+  // Level select -> Shop / Rewards (a player is already active here).
+  levelShopBtn.addEventListener("click", function () {
+    ensureAudio();
+    openShop();
+  });
+  levelRewardsBtn.addEventListener("click", function () {
+    ensureAudio();
+    openRewards();
+  });
+
+  // Shop / Rewards navigation.
+  shopBackBtn.addEventListener("click", function () {
+    openLevelSelect();
+  });
+  rewardsBackBtn.addEventListener("click", function () {
+    openLevelSelect();
+  });
+  rewardsShopBtn.addEventListener("click", function () {
+    openShop();
+  });
+
   winLeaderboardBtn.addEventListener("click", function () {
     overlay.classList.remove("show");
     showScreen(leaderboardScreen);
     openLeaderboard();
   });
 
+  // Win banner: go to the next (now unlocked) level.
+  winNextBtn.addEventListener("click", function () {
+    var next = getLevelConfig(currentLevel.level + 1);
+    overlay.classList.remove("show");
+    if (next && isLevelUnlocked(next.level)) {
+      startLevel(next);
+    } else {
+      openLevelSelect();
+    }
+  });
+
+  // Win banner: back to level select.
+  winLevelsBtn.addEventListener("click", function () {
+    overlay.classList.remove("show");
+    openLevelSelect();
+  });
+
+  // Level select: Back returns to the start screen.
+  levelBackBtn.addEventListener("click", function () {
+    // Reflect the active player's (possibly updated) coin balance.
+    if (currentProgress) startCoinCount.textContent = currentCoins();
+    else updateStartCoinsForName(nameInput.value);
+    showScreen(startScreen);
+  });
+
+  // In-game: Back returns to the level select screen.
+  gameBackBtn.addEventListener("click", function () {
+    openLevelSelect();
+  });
+
   lbBackBtn.addEventListener("click", function () {
     showScreen(startScreen);
   });
 
-  playAgainBtn.addEventListener("click", startGame);
+  // Play Again replays the current level.
+  playAgainBtn.addEventListener("click", function () {
+    startGame();
+  });
 
   // ---- Clear board (with confirm step) ----
   clearBoardBtn.addEventListener("click", function () {
