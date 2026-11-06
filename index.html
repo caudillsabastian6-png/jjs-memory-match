@@ -29,6 +29,42 @@
     padding: 12px;
     color: #ffffff;
     overflow-x: hidden;
+    position: relative;
+  }
+
+  /* ===== Animated gaming background (CSS/emoji only) ===== */
+  .bg-layer {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .bg-shape {
+    position: absolute;
+    bottom: -60px;
+    font-size: 34px;
+    opacity: 0.22;
+    animation: drift linear infinite;
+    will-change: transform;
+  }
+
+  @keyframes drift {
+    0% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 0;
+    }
+    10% { opacity: 0.25; }
+    90% { opacity: 0.25; }
+    100% {
+      transform: translateY(-115vh) rotate(260deg);
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bg-shape { animation-duration: 40s !important; }
   }
 
   .app {
@@ -38,11 +74,15 @@
     flex-direction: column;
     align-items: center;
     flex: 1;
+    position: relative;
+    z-index: 1;
   }
 
   header {
     text-align: center;
     margin-bottom: 10px;
+    position: relative;
+    width: 100%;
   }
 
   h1 {
@@ -51,6 +91,127 @@
     letter-spacing: 1px;
   }
 
+  /* ---- Sound toggle ---- */
+  .sound-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.25);
+    border: none;
+    border-radius: 999px;
+    width: 46px;
+    height: 46px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #fff;
+    touch-action: manipulation;
+    transition: transform 0.1s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sound-toggle:active { transform: scale(0.88); }
+
+  /* ---- Screens ---- */
+  .screen {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+  }
+
+  .screen.active { display: flex; }
+
+  /* ---- Big friendly buttons ---- */
+  .big-btn {
+    font-family: inherit;
+    font-size: 24px;
+    font-weight: bold;
+    color: #ffffff;
+    background: linear-gradient(145deg, #39d353, #1fae3f);
+    border: none;
+    border-radius: 999px;
+    padding: 16px 32px;
+    width: 100%;
+    max-width: 340px;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #138a2e;
+    touch-action: manipulation;
+    margin-top: 12px;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  }
+
+  .big-btn:active {
+    transform: translateY(5px);
+    box-shadow: 0 1px 0 #138a2e;
+  }
+
+  .big-btn.secondary {
+    background: linear-gradient(145deg, #ffb13f, #ff8a1f);
+    box-shadow: 0 6px 0 #c96a00;
+  }
+  .big-btn.secondary:active { box-shadow: 0 1px 0 #c96a00; }
+
+  .big-btn.purple {
+    background: linear-gradient(145deg, #a86bff, #7b2ff7);
+    box-shadow: 0 6px 0 #5a1fb0;
+  }
+  .big-btn.purple:active { box-shadow: 0 1px 0 #5a1fb0; }
+
+  .big-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 6px 0 #138a2e;
+  }
+
+  /* ---- Start screen ---- */
+  .start-card {
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 26px;
+    padding: 26px 22px;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    margin-top: 10px;
+  }
+
+  .start-emoji {
+    font-size: 54px;
+    line-height: 1;
+    margin-bottom: 10px;
+  }
+
+  .name-label {
+    display: block;
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
+  }
+
+  .name-input {
+    font-family: inherit;
+    font-size: 26px;
+    font-weight: bold;
+    text-align: center;
+    color: #7b2ff7;
+    background: #ffffff;
+    border: 4px solid #ffd23f;
+    border-radius: 18px;
+    padding: 14px 12px;
+    width: 100%;
+    outline: none;
+  }
+
+  .name-input::placeholder { color: #c9a7f2; }
+  .name-input:focus { border-color: #39d353; }
+
+  /* ---- Scoreboard ---- */
   .scoreboard {
     display: flex;
     align-items: center;
@@ -62,6 +223,13 @@
     font-size: 20px;
     font-weight: bold;
     backdrop-filter: blur(4px);
+  }
+
+  .scoreboard .player-name {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .moves-number {
@@ -96,13 +264,24 @@
   .card-inner {
     position: absolute;
     inset: 0;
-    transition: transform 0.35s ease;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
     transform-style: preserve-3d;
   }
 
   .card.flipped .card-inner,
   .card.matched .card-inner {
     transform: rotateY(180deg);
+  }
+
+  /* Tap squish feedback */
+  .card.tapped {
+    animation: tapBounce 0.28s ease;
+  }
+
+  @keyframes tapBounce {
+    0%   { transform: scale(1); }
+    45%  { transform: scale(0.9); }
+    100% { transform: scale(1); }
   }
 
   .face {
@@ -135,16 +314,114 @@
 
   .card.matched .face-front {
     background: #c6ffcf;
-    animation: pop 0.45s ease;
+    animation: pop 0.55s ease;
     box-shadow: 0 0 0 4px #39d353, 0 5px 0 rgba(0, 0, 0, 0.18);
   }
 
   @keyframes pop {
     0%   { transform: rotateY(180deg) scale(1); }
-    40%  { transform: rotateY(180deg) scale(1.18); }
+    35%  { transform: rotateY(180deg) scale(1.22); }
+    60%  { transform: rotateY(180deg) scale(0.92); }
     100% { transform: rotateY(180deg) scale(1); }
   }
 
+  /* ---- Leaderboard ---- */
+  .leaderboard-card {
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 26px;
+    padding: 20px 16px;
+    width: 100%;
+    max-width: 380px;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    margin-top: 6px;
+  }
+
+  .leaderboard-card h2 {
+    text-align: center;
+    font-size: 28px;
+    margin-bottom: 6px;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
+  }
+
+  .lb-status {
+    text-align: center;
+    font-size: 14px;
+    opacity: 0.9;
+    margin-bottom: 12px;
+    min-height: 18px;
+  }
+
+  .lb-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .lb-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #5a1fb0;
+    border-radius: 14px;
+    padding: 10px 12px;
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  .lb-rank {
+    flex: 0 0 auto;
+    font-size: 22px;
+    min-width: 30px;
+    text-align: center;
+  }
+
+  .lb-name {
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .lb-moves {
+    flex: 0 0 auto;
+    background: #7b2ff7;
+    color: #fff;
+    border-radius: 999px;
+    padding: 2px 12px;
+    font-size: 16px;
+  }
+
+  .lb-date {
+    flex: 0 0 auto;
+    font-size: 13px;
+    color: #8a63c9;
+    font-weight: normal;
+  }
+
+  .lb-empty {
+    text-align: center;
+    font-size: 18px;
+    padding: 20px 10px;
+    color: #ffffff;
+  }
+
+  .clear-link {
+    display: block;
+    margin: 14px auto 0;
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 15px;
+    text-decoration: underline;
+    cursor: pointer;
+    opacity: 0.85;
+  }
+
+  /* ---- Overlay (win + confirm) ---- */
   .overlay {
     position: fixed;
     inset: 0;
@@ -176,6 +453,8 @@
     width: 100%;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
     animation: bounceIn 0.5s ease;
+    position: relative;
+    z-index: 12;
   }
 
   @keyframes bounceIn {
@@ -200,77 +479,470 @@
     color: #5a1fb0;
   }
 
-  .banner p b {
-    font-size: 24px;
+  .banner p b { font-size: 24px; }
+
+  .banner .btn-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
 
-  .play-again {
-    font-family: inherit;
-    font-size: 24px;
-    font-weight: bold;
-    color: #ffffff;
-    background: linear-gradient(145deg, #39d353, #1fae3f);
-    border: none;
-    border-radius: 999px;
-    padding: 16px 32px;
-    width: 100%;
-    cursor: pointer;
-    box-shadow: 0 5px 0 #138a2e;
-    touch-action: manipulation;
+  .banner .big-btn { margin-top: 0; }
+
+  /* ---- Confetti / star burst ---- */
+  .confetti-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 11;
+    overflow: hidden;
   }
 
-  .play-again:active {
-    transform: translateY(3px);
-    box-shadow: 0 2px 0 #138a2e;
+  .confetti {
+    position: absolute;
+    top: -40px;
+    font-size: 26px;
+    animation: confettiFall linear forwards;
+    will-change: transform;
+  }
+
+  @keyframes confettiFall {
+    0%   { transform: translateY(-40px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(540deg); opacity: 0.9; }
   }
 </style>
 </head>
 <body>
+  <!-- Animated gaming background -->
+  <div class="bg-layer" id="bgLayer" aria-hidden="true"></div>
+
   <div class="app">
     <header>
       <h1>JJ's Memory Match</h1>
+      <button class="sound-toggle" id="soundToggle" type="button" aria-label="Toggle sound">🔊</button>
     </header>
 
-    <div class="scoreboard">
-      <span>Moves:</span>
-      <span class="moves-number" id="moves">0</span>
+    <!-- ===== Start Screen ===== -->
+    <div class="screen active" id="startScreen">
+      <div class="start-card">
+        <div class="start-emoji">🎮 🕹️ 👾</div>
+        <label class="name-label" for="nameInput">What's your name?</label>
+        <input
+          class="name-input"
+          id="nameInput"
+          type="text"
+          maxlength="14"
+          autocomplete="off"
+          autocapitalize="words"
+          placeholder="Type your name"
+        />
+      </div>
+      <button class="big-btn" id="startBtn" disabled>Play!</button>
+      <button class="big-btn purple" id="toLeaderboardBtn">🏆 Leaderboard</button>
     </div>
 
-    <div class="board" id="board" aria-label="Memory game board"></div>
+    <!-- ===== Game Screen ===== -->
+    <div class="screen" id="gameScreen">
+      <div class="scoreboard">
+        <span class="player-name" id="scorePlayer">Player</span>
+        <span>•</span>
+        <span>Moves:</span>
+        <span class="moves-number" id="moves">0</span>
+      </div>
+      <div class="board" id="board" aria-label="Memory game board"></div>
+    </div>
+
+    <!-- ===== Leaderboard Screen ===== -->
+    <div class="screen" id="leaderboardScreen">
+      <div class="leaderboard-card">
+        <h2>🏆 Leaderboard</h2>
+        <div class="lb-status" id="lbStatus"></div>
+        <ol class="lb-list" id="lbList"></ol>
+      </div>
+      <button class="clear-link" id="clearBoardBtn">Clear board</button>
+      <button class="big-btn secondary" id="lbBackBtn">Back</button>
+    </div>
   </div>
 
+  <!-- ===== Win Overlay ===== -->
   <div class="overlay" id="overlay">
     <div class="banner">
-      <div class="emoji">🎉🏆🎉</div>
+      <div class="emoji">🎮🏆🎮</div>
       <h2>You Win!</h2>
-      <p>You did it in <b id="finalMoves">0</b> moves!</p>
-      <button class="play-again" id="playAgain">Play Again</button>
+      <p>Great job, <b id="winName">Player</b>!<br />You did it in <b id="finalMoves">0</b> moves!</p>
+      <div class="btn-row">
+        <button class="big-btn" id="playAgain">Play Again</button>
+        <button class="big-btn purple" id="winLeaderboardBtn">🏆 Leaderboard</button>
+      </div>
     </div>
   </div>
 
+  <!-- ===== Clear Confirm Overlay ===== -->
+  <div class="overlay" id="confirmOverlay">
+    <div class="banner">
+      <div class="emoji">🧹</div>
+      <h2>Clear the board?</h2>
+      <p>This erases the scores saved on this device. You can't undo it.</p>
+      <div class="btn-row">
+        <button class="big-btn" id="confirmClearYes" style="background:linear-gradient(145deg,#ff5e6c,#e23744);box-shadow:0 6px 0 #a81824;">Yes, clear it</button>
+        <button class="big-btn purple" id="confirmClearNo">Keep scores</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confetti layer -->
+  <div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
+
 <script>
-  // Kid-friendly emoji pool: animals, space, food
+  /* ============================================================
+     FAMILY SCORES SERVER
+     ------------------------------------------------------------
+     Optional online leaderboard shared across the family's
+     devices. All calls here are best-effort with a short timeout:
+     if anything fails or there is no connection, the game falls
+     back to the local (localStorage) board and keeps working
+     perfectly offline. These are the ONLY network calls the game
+     makes.
+     ============================================================ */
+  var SCORES_SERVER = {
+    base: "https://games.cardcauldrontcg.com/scores",
+    key: "family-games-2026",
+    game: "jj-memory-match",
+    timeoutMs: 4000
+  };
+
+  // fetch() with a short timeout so slow/no network never blocks play.
+  function fetchWithTimeout(url, options, timeoutMs) {
+    options = options || {};
+    if (typeof AbortController === "undefined" || !window.fetch) {
+      return Promise.reject(new Error("fetch-unavailable"));
+    }
+    var controller = new AbortController();
+    var timer = setTimeout(function () {
+      controller.abort();
+    }, timeoutMs);
+    options.signal = controller.signal;
+    return fetch(url, options).then(
+      function (res) { clearTimeout(timer); return res; },
+      function (err) { clearTimeout(timer); throw err; }
+    );
+  }
+
+  // Submit a finished score to the server (fire-and-forget, background).
+  // Never throws to the caller; failures are swallowed.
+  function submitScoreToServer(name, score) {
+    try {
+      return fetchWithTimeout(
+        SCORES_SERVER.base,
+        {
+          method: "POST",
+          headers: {
+            "X-Family-Key": SCORES_SERVER.key,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            game: SCORES_SERVER.game,
+            name: name,
+            score: score
+          })
+        },
+        SCORES_SERVER.timeoutMs
+      )
+        .then(function () { /* ignore response */ })
+        .catch(function () { /* offline / error: local board already saved */ });
+    } catch (e) {
+      return Promise.resolve();
+    }
+  }
+
+  // Read the shared board from the server.
+  // Resolves to an array of {name, score, date} (already sorted fewest
+  // moves first) or rejects so callers can fall back to the local board.
+  function fetchServerScores() {
+    var url = SCORES_SERVER.base +
+      "?game=" + encodeURIComponent(SCORES_SERVER.game);
+    return fetchWithTimeout(
+      url,
+      {
+        method: "GET",
+        headers: { "X-Family-Key": SCORES_SERVER.key }
+      },
+      SCORES_SERVER.timeoutMs
+    ).then(function (res) {
+      if (!res.ok) throw new Error("bad-status");
+      return res.json();
+    }).then(function (data) {
+      if (!data || !Array.isArray(data.scores)) throw new Error("bad-body");
+      return data.scores.filter(function (s) {
+        return s && typeof s.name === "string" && typeof s.score === "number";
+      });
+    });
+  }
+  /* ===================== END FAMILY SCORES SERVER ===================== */
+
+  // Gaming-themed emoji pool: controllers, consoles, arcade & retro gaming symbols
   var EMOJI_POOL = [
-    "🐶", "🐱", "🦁", "🐸", "🐵", "🐼", "🦊", "🐷", "🐙", "🦄", "🐝", "🐢",
-    "🚀", "🌟", "🌈", "🪐", "☀️", "🌙",
-    "🍎", "🍌", "🍓", "🍕", "🍩", "🍪", "🍉", "🧁"
+    "🎮", "🕹️", "👾", "🎲", "🏆", "📺",
+    "💾", "💿", "🖥️", "⌨️", "🖱️", "🎯",
+    "🃏", "♟️", "🧩", "⭐", "💎", "🔋",
+    "🛸", "🚀", "⚡", "🔥", "🎰", "🏅"
   ];
 
   var PAIRS = 6;
+  var STORAGE_KEY = "jjMemoryMatch.leaderboard";
+  var NAME_KEY = "jjMemoryMatch.playerName";
+  var SOUND_KEY = "jjMemoryMatch.sound";
+  var MAX_SCORES = 10;
+
+  // ---- Elements ----
+  var startScreen = document.getElementById("startScreen");
+  var gameScreen = document.getElementById("gameScreen");
+  var leaderboardScreen = document.getElementById("leaderboardScreen");
+
+  var nameInput = document.getElementById("nameInput");
+  var startBtn = document.getElementById("startBtn");
+  var toLeaderboardBtn = document.getElementById("toLeaderboardBtn");
 
   var board = document.getElementById("board");
   var movesEl = document.getElementById("moves");
+  var scorePlayerEl = document.getElementById("scorePlayer");
+
   var overlay = document.getElementById("overlay");
   var finalMovesEl = document.getElementById("finalMoves");
+  var winNameEl = document.getElementById("winName");
   var playAgainBtn = document.getElementById("playAgain");
+  var winLeaderboardBtn = document.getElementById("winLeaderboardBtn");
 
+  var lbList = document.getElementById("lbList");
+  var lbStatus = document.getElementById("lbStatus");
+  var lbBackBtn = document.getElementById("lbBackBtn");
+  var clearBoardBtn = document.getElementById("clearBoardBtn");
+
+  var confirmOverlay = document.getElementById("confirmOverlay");
+  var confirmClearYes = document.getElementById("confirmClearYes");
+  var confirmClearNo = document.getElementById("confirmClearNo");
+
+  var soundToggle = document.getElementById("soundToggle");
+  var bgLayer = document.getElementById("bgLayer");
+  var confettiLayer = document.getElementById("confettiLayer");
+
+  // ---- Game state ----
   var moves = 0;
   var matchedCount = 0;
   var firstCard = null;
   var secondCard = null;
   var lockBoard = false;
+  var currentPlayer = "";
+  var lbRequestId = 0;
 
-  // Shuffle an array in place (Fisher-Yates)
+  // ---- Screen switching ----
+  function showScreen(screen) {
+    startScreen.classList.remove("active");
+    gameScreen.classList.remove("active");
+    leaderboardScreen.classList.remove("active");
+    screen.classList.add("active");
+  }
+
+  /* ===================== SOUND (WebAudio only) ===================== */
+  var soundOn = true;
+  var audioCtx = null;
+
+  function loadSoundPref() {
+    try {
+      var v = localStorage.getItem(SOUND_KEY);
+      return v === null ? true : v === "on";
+    } catch (e) { return true; }
+  }
+
+  function saveSoundPref() {
+    try { localStorage.setItem(SOUND_KEY, soundOn ? "on" : "off"); } catch (e) {}
+  }
+
+  function ensureAudio() {
+    if (audioCtx) return;
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
+    } catch (e) { audioCtx = null; }
+  }
+
+  // Play a short tone. type: 'sine'/'square'/'triangle'
+  function tone(freq, startAt, duration, type, gainPeak) {
+    if (!audioCtx) return;
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.type = type || "sine";
+    osc.frequency.setValueAtTime(freq, startAt);
+    gain.gain.setValueAtTime(0.0001, startAt);
+    gain.gain.exponentialRampToValueAtTime(gainPeak || 0.2, startAt + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(startAt);
+    osc.stop(startAt + duration + 0.02);
+  }
+
+  function playPop() {
+    if (!soundOn) return;
+    ensureAudio();
+    if (!audioCtx) return;
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    var t = audioCtx.currentTime;
+    tone(520, t, 0.1, "square", 0.18);
+    tone(780, t + 0.04, 0.1, "square", 0.14);
+  }
+
+  function playMatch() {
+    if (!soundOn) return;
+    ensureAudio();
+    if (!audioCtx) return;
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    var t = audioCtx.currentTime;
+    tone(660, t, 0.14, "triangle", 0.2);
+    tone(880, t + 0.11, 0.18, "triangle", 0.2);
+  }
+
+  function playCheer() {
+    if (!soundOn) return;
+    ensureAudio();
+    if (!audioCtx) return;
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    var t = audioCtx.currentTime;
+    var notes = [523, 659, 784, 1047]; // C E G C — happy arpeggio
+    for (var i = 0; i < notes.length; i++) {
+      tone(notes[i], t + i * 0.12, 0.22, "triangle", 0.22);
+    }
+  }
+
+  function updateSoundToggle() {
+    soundToggle.textContent = soundOn ? "🔊" : "🔇";
+    soundToggle.setAttribute("aria-label", soundOn ? "Sound on" : "Sound off");
+  }
+
+  soundToggle.addEventListener("click", function () {
+    soundOn = !soundOn;
+    saveSoundPref();
+    updateSoundToggle();
+    if (soundOn) { ensureAudio(); playPop(); }
+  });
+  /* ===================== END SOUND ===================== */
+
+  // ---- localStorage leaderboard (offline fallback) ----
+  function loadScores() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      var data = JSON.parse(raw);
+      if (!Array.isArray(data)) return [];
+      return data.filter(function (s) {
+        return s && typeof s.name === "string" && typeof s.moves === "number";
+      });
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveScores(scores) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
+    } catch (e) {}
+  }
+
+  function loadName() {
+    try { return localStorage.getItem(NAME_KEY) || ""; }
+    catch (e) { return ""; }
+  }
+
+  function saveName(name) {
+    try { localStorage.setItem(NAME_KEY, name); } catch (e) {}
+  }
+
+  // Record a finished game locally (always), sorted fewest moves first, cap 10.
+  function recordScore(name, moveCount) {
+    var scores = loadScores();
+    scores.push({
+      name: name,
+      moves: moveCount,
+      date: new Date().toISOString()
+    });
+    scores.sort(function (a, b) { return a.moves - b.moves; });
+    scores = scores.slice(0, MAX_SCORES);
+    saveScores(scores);
+  }
+
+  function formatDate(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    var month = d.getMonth() + 1;
+    var day = d.getDate();
+    var year = String(d.getFullYear()).slice(2);
+    return month + "/" + day + "/" + year;
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  // Normalize to a common shape {name, moves, date} for rendering.
+  function normalizeLocal(scores) {
+    return scores.map(function (s) {
+      return { name: s.name, moves: s.moves, date: s.date };
+    });
+  }
+  function normalizeServer(scores) {
+    return scores.map(function (s) {
+      return { name: s.name, moves: s.score, date: s.date };
+    });
+  }
+
+  function renderRows(rows) {
+    lbList.innerHTML = "";
+    if (!rows || rows.length === 0) {
+      var empty = document.createElement("li");
+      empty.className = "lb-empty";
+      empty.textContent = "No scores yet — play a game!";
+      lbList.appendChild(empty);
+      return;
+    }
+    var medals = ["🥇", "🥈", "🥉"];
+    var limit = Math.min(rows.length, MAX_SCORES);
+    for (var i = 0; i < limit; i++) {
+      var s = rows[i];
+      var li = document.createElement("li");
+      li.className = "lb-row";
+      var rank = i < 3 ? medals[i] : (i + 1);
+      li.innerHTML =
+        '<span class="lb-rank">' + rank + '</span>' +
+        '<span class="lb-name">' + escapeHtml(s.name) + '</span>' +
+        '<span class="lb-date">' + formatDate(s.date) + '</span>' +
+        '<span class="lb-moves">' + s.moves + '</span>';
+      lbList.appendChild(li);
+    }
+  }
+
+  // Show local board immediately, then try the server and swap in if it works.
+  function openLeaderboard() {
+    var myId = ++lbRequestId;
+    renderRows(normalizeLocal(loadScores()));
+    lbStatus.textContent = "Checking family scores…";
+
+    fetchServerScores().then(function (serverScores) {
+      if (myId !== lbRequestId) return; // a newer open happened
+      renderRows(normalizeServer(serverScores));
+      lbStatus.textContent = "🌐 Family scores (online)";
+    }).catch(function () {
+      if (myId !== lbRequestId) return;
+      lbStatus.textContent = "📱 Saved on this device (offline)";
+    });
+  }
+
+  // ---- Deck building ----
   function shuffle(arr) {
     for (var i = arr.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
@@ -281,7 +953,6 @@
     return arr;
   }
 
-  // Pick PAIRS unique emoji at random, duplicate each, then shuffle
   function buildDeck() {
     var pool = shuffle(EMOJI_POOL.slice());
     var chosen = pool.slice(0, PAIRS);
@@ -314,6 +985,12 @@
     if (card.classList.contains("matched")) return;
     if (card.classList.contains("flipped")) return;
 
+    // Juicy tap: squish animation + pop sound
+    card.classList.remove("tapped");
+    void card.offsetWidth; // restart animation
+    card.classList.add("tapped");
+    playPop();
+
     card.classList.add("flipped");
 
     if (!firstCard) {
@@ -334,9 +1011,10 @@
       firstCard.classList.add("matched");
       secondCard.classList.add("matched");
       matchedCount++;
+      playMatch();
       resetTurn();
       if (matchedCount === PAIRS) {
-        setTimeout(showWin, 600);
+        setTimeout(showWin, 550);
       }
     } else {
       lockBoard = true;
@@ -355,12 +1033,20 @@
   }
 
   function showWin() {
+    // Always save locally first (offline-safe), then submit in background.
+    recordScore(currentPlayer, moves);
+    submitScoreToServer(currentPlayer, moves);
+
     finalMovesEl.textContent = moves;
+    winNameEl.textContent = currentPlayer;
     overlay.classList.add("show");
+    playCheer();
+    launchConfetti();
   }
 
   function startGame() {
     overlay.classList.remove("show");
+    showScreen(gameScreen);
     board.innerHTML = "";
     moves = 0;
     matchedCount = 0;
@@ -368,6 +1054,7 @@
     secondCard = null;
     lockBoard = false;
     movesEl.textContent = "0";
+    scorePlayerEl.textContent = currentPlayer;
 
     var deck = buildDeck();
     for (var i = 0; i < deck.length; i++) {
@@ -375,9 +1062,112 @@
     }
   }
 
+  // ---- Confetti / star burst ----
+  function launchConfetti() {
+    var pieces = ["⭐", "🎉", "🏆", "🎮", "💎", "✨", "🕹️"];
+    var count = 32;
+    for (var i = 0; i < count; i++) {
+      (function (i) {
+        var el = document.createElement("span");
+        el.className = "confetti";
+        el.textContent = pieces[Math.floor(Math.random() * pieces.length)];
+        el.style.left = Math.random() * 100 + "vw";
+        el.style.fontSize = (18 + Math.random() * 20) + "px";
+        var dur = 1.8 + Math.random() * 1.6;
+        el.style.animationDuration = dur + "s";
+        el.style.animationDelay = (Math.random() * 0.5) + "s";
+        confettiLayer.appendChild(el);
+        setTimeout(function () {
+          if (el.parentNode) el.parentNode.removeChild(el);
+        }, (dur + 0.6) * 1000);
+      })(i);
+    }
+  }
+
+  // ---- Animated background ----
+  function buildBackground() {
+    var shapes = ["🎮", "🕹️", "👾", "⭐", "💎", "🎲", "🚀", "✨", "🏆", "⚡"];
+    var total = 16;
+    for (var i = 0; i < total; i++) {
+      var el = document.createElement("span");
+      el.className = "bg-shape";
+      el.textContent = shapes[i % shapes.length];
+      el.style.left = Math.random() * 100 + "vw";
+      el.style.fontSize = (22 + Math.random() * 26) + "px";
+      var dur = 14 + Math.random() * 16;
+      el.style.animationDuration = dur + "s";
+      el.style.animationDelay = "-" + (Math.random() * dur) + "s";
+      bgLayer.appendChild(el);
+    }
+  }
+
+  // ---- Name field wiring ----
+  function updateStartEnabled() {
+    startBtn.disabled = nameInput.value.trim().length === 0;
+  }
+
+  nameInput.addEventListener("input", updateStartEnabled);
+  nameInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !startBtn.disabled) {
+      beginFromStart();
+    }
+  });
+
+  function beginFromStart() {
+    var name = nameInput.value.trim();
+    if (!name) return;
+    currentPlayer = name;
+    saveName(name);
+    ensureAudio(); // unlock audio on a user gesture
+    startGame();
+  }
+
+  // ---- Button wiring ----
+  startBtn.addEventListener("click", beginFromStart);
+
+  toLeaderboardBtn.addEventListener("click", function () {
+    showScreen(leaderboardScreen);
+    openLeaderboard();
+  });
+
+  winLeaderboardBtn.addEventListener("click", function () {
+    overlay.classList.remove("show");
+    showScreen(leaderboardScreen);
+    openLeaderboard();
+  });
+
+  lbBackBtn.addEventListener("click", function () {
+    showScreen(startScreen);
+  });
+
   playAgainBtn.addEventListener("click", startGame);
 
-  startGame();
+  // ---- Clear board (with confirm step) ----
+  clearBoardBtn.addEventListener("click", function () {
+    confirmOverlay.classList.add("show");
+  });
+
+  confirmClearNo.addEventListener("click", function () {
+    confirmOverlay.classList.remove("show");
+  });
+
+  confirmClearYes.addEventListener("click", function () {
+    saveScores([]); // clears the local/device board
+    confirmOverlay.classList.remove("show");
+    openLeaderboard();
+  });
+
+  // ---- Init ----
+  (function init() {
+    buildBackground();
+
+    soundOn = loadSoundPref();
+    updateSoundToggle();
+
+    var saved = loadName();
+    if (saved) nameInput.value = saved;
+    updateStartEnabled();
+  })();
 </script>
 </body>
 </html>
